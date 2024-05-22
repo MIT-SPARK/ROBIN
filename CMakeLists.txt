@@ -111,6 +111,13 @@ export(
 )
 
 install(
+    TARGETS xenium pmc
+    EXPORT robinTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+
+install(
         EXPORT robinTargets
         FILE robinTargets.cmake
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
