@@ -133,6 +133,11 @@ install(
 
 install(DIRECTORY include/robin DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+# To set forcibly xeniumConfig.cmake
+install(FILES cmake/xeniumConfig.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xenium
+        )
+
 export(PACKAGE robin)
 
 # Tests

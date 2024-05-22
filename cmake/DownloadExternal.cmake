@@ -87,4 +87,5 @@ function(robin_download_xenium)
 			DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xenium/
 			NAMESPACE xenium::
 	)
+	install(DIRECTORY ${xenium_SOURCE_DIR}/xenium DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endfunction()
