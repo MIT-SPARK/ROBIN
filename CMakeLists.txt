@@ -101,7 +101,7 @@ write_basic_package_version_file(
 configure_package_config_file(
         ${PROJECT_SOURCE_DIR}/cmake/robinConfig.cmake.in
         ${PROJECT_BINARY_DIR}/robinConfig.cmake
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/robin/cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 
 export(
@@ -113,7 +113,7 @@ export(
 install(
         EXPORT robinTargets
         FILE robinTargets.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/robin/cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
         NAMESPACE robin::
 )
 
@@ -121,7 +121,7 @@ install(
         FILES
         ${PROJECT_BINARY_DIR}/robinConfig.cmake
         ${PROJECT_BINARY_DIR}/robinConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/robin/cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
