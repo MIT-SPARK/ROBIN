@@ -51,7 +51,7 @@ function(robin_download_atomic_queue)
 	install(
 			EXPORT atomicQueueTargets
 			FILE atomicQueueTargets.cmake
-			DESTINATION ${CMAKE_INSTALL_LIBDIR}/atomicQueue/cmake
+			DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/atomicQueue
 			NAMESPACE atomicQueue::
 	)
 endfunction()
@@ -84,7 +84,8 @@ function(robin_download_xenium)
 	install(
 			EXPORT xeniumTargets
 			FILE xeniumTargets.cmake
-			DESTINATION ${CMAKE_INSTALL_LIBDIR}/xenium/cmake
+			DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xenium/
 			NAMESPACE xenium::
 	)
+	install(DIRECTORY ${xenium_SOURCE_DIR}/xenium DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endfunction()

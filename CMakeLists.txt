@@ -61,7 +61,7 @@ file(GLOB
         SOURCE_FILES
         ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-add_library(robin ${SOURCE_FILES})
+add_library(robin STATIC ${SOURCE_FILES})
 add_library(robin::robin ALIAS robin)
 target_link_libraries(robin
         PUBLIC Eigen3::Eigen
@@ -101,7 +101,7 @@ write_basic_package_version_file(
 configure_package_config_file(
         ${PROJECT_SOURCE_DIR}/cmake/robinConfig.cmake.in
         ${PROJECT_BINARY_DIR}/robinConfig.cmake
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/robin/cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 
 export(
@@ -111,9 +111,16 @@ export(
 )
 
 install(
+    TARGETS xenium pmc
+    EXPORT robinTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+
+install(
         EXPORT robinTargets
         FILE robinTargets.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/robin/cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
         NAMESPACE robin::
 )
 
@@ -121,10 +128,15 @@ install(
         FILES
         ${PROJECT_BINARY_DIR}/robinConfig.cmake
         ${PROJECT_BINARY_DIR}/robinConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/robin/cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/robin DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# To set forcibly xeniumConfig.cmake
+install(FILES cmake/xeniumConfig.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xenium
+        )
 
 export(PACKAGE robin)
 
