@@ -61,7 +61,7 @@ file(GLOB
         SOURCE_FILES
         ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-add_library(robin ${SOURCE_FILES})
+add_library(robin STATIC ${SOURCE_FILES})
 add_library(robin::robin ALIAS robin)
 target_link_libraries(robin
         PUBLIC Eigen3::Eigen
