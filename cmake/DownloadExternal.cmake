@@ -89,3 +89,17 @@ function(robin_download_xenium)
 	)
 	install(DIRECTORY ${xenium_SOURCE_DIR}/xenium DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endfunction()
+
+# For handling Eigen3 library
+function(find_external_dependency PACKAGE_NAME TARGET_NAME INCLUDED_CMAKE_PATH)
+  string(TOUPPER ${PACKAGE_NAME} PACKAGE_NAME_UP)
+  set(USE_FROM_SYSTEM_OPTION "USE_SYSTEM_${PACKAGE_NAME_UP}")
+  if(${${USE_FROM_SYSTEM_OPTION}})
+    find_package(${PACKAGE_NAME} QUIET NO_MODULE)
+  endif()
+  if(NOT ${${USE_FROM_SYSTEM_OPTION}} OR NOT TARGET ${TARGET_NAME})
+    set(${USE_FROM_SYSTEM_OPTION} OFF PARENT_SCOPE)
+    include(${INCLUDED_CMAKE_PATH})
+  endif()
+endfunction()
+

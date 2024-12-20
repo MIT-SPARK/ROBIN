@@ -35,6 +35,7 @@ option(BUILD_TESTS "Enable testing with ctest." ON)
 option(BUILD_PYTHON_BINDINGS "Build python bindings." ON)
 option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings" OFF)
 option(USE_ASAN "Enable address sanitizer" OFF)
+option(USE_SYSTEM_EIGEN3 "Use system pre-installed Eigen" ON)
 option(ENABLE_DIAGNOSTIC_PRINT "Enable printing of diagnostic messages" OFF)
 
 if (ENABLE_DIAGNOSTIC_PRINT)
@@ -46,7 +47,7 @@ endif ()
 # Dependencies
 #
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-find_package(Eigen3 3.3 QUIET REQUIRED NO_MODULE)
+find_external_dependency("Eigen3" "Eigen3::Eigen" "${CMAKE_CURRENT_LIST_DIR}/cmake/DownloadEigen.cmake")
 find_package(OpenMP QUIET REQUIRED)
 robin_download_pmc()
 robin_download_xenium()
