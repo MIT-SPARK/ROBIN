@@ -32,7 +32,6 @@ include(DownloadExternal)
 #
 option(BUILD_DOCS "Build documentation." OFF)
 option(BUILD_TESTS "Enable testing with ctest." ON)
-option(BUILD_PYTHON_BINDINGS "Build python bindings." ON)
 option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings" OFF)
 option(USE_ASAN "Enable address sanitizer" OFF)
 option(USE_SYSTEM_EIGEN3 "Use system pre-installed Eigen" ON)
@@ -147,13 +146,6 @@ if (BUILD_TESTS)
     add_subdirectory(tests)
 endif ()
 
-# Python bindings
-if (BUILD_PYTHON_BINDINGS)
-    robin_download_pybind11()
-    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
-    add_subdirectory(python)
-endif ()
-
 # MATLAB bindings
 if (BUILD_MATLAB_BINDINGS)
     if (USE_ASAN)
@@ -178,7 +170,6 @@ message(STATUS "==============================================================="
 message(STATUS "============= Robin Configuration Options =====================")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_DOCS: ${BUILD_DOCS}")
-message(STATUS "BUILD_PYTHON_BINDINGS: ${BUILD_PYTHON_BINDINGS}")
 message(STATUS "BUILD_MATLAB_BINDINGS: ${BUILD_MATLAB_BINDINGS}")
 message(STATUS "USE_ASAN: ${USE_ASAN}")
 message(STATUS "ENABLE_DIAGNOSTIC_PRINT: ${ENABLE_DIAGNOSTIC_PRINT}")
