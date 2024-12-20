@@ -9,7 +9,7 @@ message(STATUS "Python Interpreter Version: ${PYTHON_VERSION_MAJOR}.${PYTHON_VER
 # fix for clang
 # see: https://github.com/pybind/pybind11/issues/1818
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(robin_py PUBLIC -fsized-deallocation)
+    target_compile_options(spark_robin PUBLIC -fsized-deallocation)
 endif ()
 
 if (DEFINED SKBUILD)
@@ -28,12 +28,12 @@ else()
   FetchContent_MakeAvailable(ext_robin)
 endif()
 
-pybind11_add_module(robin_py robin_py/robin_py.cpp)
+pybind11_add_module(spark_robin robin_py/robin_py.cpp)
 
-target_link_libraries(robin_py PUBLIC robin::robin)
+target_link_libraries(spark_robin PUBLIC robin::robin)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  target_compile_options(robin_py PUBLIC -fsized-deallocation)
+  target_compile_options(spark_robin PUBLIC -fsized-deallocation)
 endif()
 
-install(TARGETS robin_py DESTINATION .)
+install(TARGETS spark_robin DESTINATION .)

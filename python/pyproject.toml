@@ -3,7 +3,7 @@ requires = ["scikit_build_core", "pybind11"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "robin_py"
+name = "spark_robin"
 version = "1.1.0"
 requires-python = ">=3.8"
 description ='Python binding for Robin'
