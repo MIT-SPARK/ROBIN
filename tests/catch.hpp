@@ -10861,8 +10861,6 @@ namespace Catch {
 
 #include <signal.h>
 
-#undef MINSIGSTKSZ
-#define MINSIGSTKSZ 16384
 namespace Catch {
 
     struct SignalDefs {
