@@ -15,7 +15,7 @@ namespace py = pybind11;
 /**
  * Python interface with pybind11
  */
-PYBIND11_MODULE(robin_py, m) {
+PYBIND11_MODULE(spark_robin, m) {
   m.doc() = "Python binding for Robin";
 
   // GraphStorageType
