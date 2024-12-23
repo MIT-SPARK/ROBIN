@@ -23,8 +23,7 @@ else()
   include(FetchContent)
   FetchContent_Declare(
     ext_robin PREFIX robin
-    URL https://github.com/MIT-SPARK/ROBIN/archive/refs/tags/v${CMAKE_PROJECT_VERSION}.tar.gz SOURCE_SUBDIR
-        cpp/patchworkpp)
+    URL https://github.com/MIT-SPARK/ROBIN/archive/refs/tags/v${CMAKE_PROJECT_VERSION}.tar.gz)
   FetchContent_MakeAvailable(ext_robin)
 endif()
 
