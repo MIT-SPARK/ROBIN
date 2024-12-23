@@ -5,7 +5,7 @@ include(GNUInstallDirs)
 function(robin_download_pybind11)
 	download_project(PROJ pybind11
 		GIT_REPOSITORY https://github.com/pybind/pybind11.git
-		GIT_TAG        v2.5.0
+		GIT_TAG        v2.13.6
 		QUIET
 	)
 	set(pybind11_SOURCE_DIR "${pybind11_SOURCE_DIR}" PARENT_SCOPE)
