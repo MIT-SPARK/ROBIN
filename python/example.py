@@ -1,10 +1,10 @@
-import robin_py
+import spark_robin
 
 if __name__ == "__main__":
     print("Examples showing usage of robin_py")
 
     # creating a Graph in robin
-    g = robin_py.AdjListGraph()
+    g = spark_robin.AdjListGraph()
 
     for i in range(10):
         g.AddVertex(i)
@@ -12,11 +12,11 @@ if __name__ == "__main__":
         g.AddEdge(i, i+10)
 
     # find the corresponding inlier structures
-    max_core_indices = robin_py.FindInlierStructure(
-        g, robin_py.InlierGraphStructure.MAX_CORE
+    max_core_indices = spark_robin.FindInlierStructure(
+        g, spark_robin.InlierGraphStructure.MAX_CORE
     )
-    max_clique_indices = robin_py.FindInlierStructure(
-        g, robin_py.InlierGraphStructure.MAX_CLIQUE
+    max_clique_indices = spark_robin.FindInlierStructure(
+        g, spark_robin.InlierGraphStructure.MAX_CLIQUE
     )
 
 

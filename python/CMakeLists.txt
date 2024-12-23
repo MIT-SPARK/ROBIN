@@ -1,37 +1,40 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.18)
 
 project(robin_python_bindings)
 
-pybind11_add_module(robin_py robin_py/robin_py.cpp)
+# Set build type
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+find_package(pybind11 CONFIG REQUIRED)
 
 message(STATUS "Python Interpreter Version: ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
-
-target_link_libraries(robin_py PUBLIC robin)
 
 # fix for clang
 # see: https://github.com/pybind/pybind11/issues/1818
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(robin_py PUBLIC -fsized-deallocation)
+    target_compile_options(spark_robin PUBLIC -fsized-deallocation)
 endif ()
 
-# make sure to output the build file to robin_py folder
-SET_TARGET_PROPERTIES(robin_py
-        PROPERTIES
-        PREFIX ""
-        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/robin_py"
-        )
+if (DEFINED SKBUILD)
+    message(STATUS "Building with Scikit-Build")
+endif ()
 
-# copy package __init__.py file
-configure_file(robin_py/__init__.py
-        ${CMAKE_CURRENT_BINARY_DIR}/robin_py/__init__.py
-        )
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../)
+  # 'robin_cpp': user-defined build directory
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/robin_cpp)
+else()
+  message(STATUS "Performing out-of-tree build, fetching ROBIN v${CMAKE_PROJECT_VERSION} Release from Github")
+  include(FetchContent)
+  FetchContent_Declare(
+    ext_robin PREFIX robin
+    URL https://github.com/MIT-SPARK/ROBIN/archive/refs/tags/v${CMAKE_PROJECT_VERSION}.tar.gz)
+  FetchContent_MakeAvailable(ext_robin)
+endif()
 
-# copy setup.py file
-configure_file(setup.py.in
-        ${CMAKE_CURRENT_BINARY_DIR}/setup.py
-        )
+pybind11_add_module(spark_robin robin_py/robin_py.cpp)
 
-file(COPY .
-        DESTINATION .
-        FILES_MATCHING
-        PATTERN *.py)
+target_link_libraries(spark_robin PUBLIC robin::robin pmc)
+
+install(TARGETS spark_robin DESTINATION .)
