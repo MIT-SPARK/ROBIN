@@ -89,6 +89,7 @@ include(CMakePackageConfigHelpers)
 install(
         TARGETS robin
         EXPORT robinTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
@@ -113,6 +114,7 @@ export(
 install(
     TARGETS xenium pmc
     EXPORT robinTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 

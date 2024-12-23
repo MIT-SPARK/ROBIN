@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.18)
 
 project(robin_python_bindings)
 
+# Set build type
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
 message(STATUS "Python Interpreter Version: ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
@@ -17,6 +22,7 @@ if (DEFINED SKBUILD)
 endif ()
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../)
+  # 'robin_cpp': user-defined build directory
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/robin_cpp)
 else()
   message(STATUS "Performing out-of-tree build, fetching ROBIN v${CMAKE_PROJECT_VERSION} Release from Github")
@@ -29,10 +35,6 @@ endif()
 
 pybind11_add_module(spark_robin robin_py/robin_py.cpp)
 
-target_link_libraries(spark_robin PUBLIC robin::robin)
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  target_compile_options(spark_robin PUBLIC -fsized-deallocation)
-endif()
+target_link_libraries(spark_robin PUBLIC robin::robin pmc)
 
 install(TARGETS spark_robin DESTINATION .)
