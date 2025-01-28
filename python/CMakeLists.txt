@@ -10,6 +10,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# NOTE (hlim): To generate `libpmc.a` instead of `libpmc.so`.
+# On a local computer, either `libpmc.a` or `libpmc.so` is fine,
+# but for PyPI, it should be `libpmc.a` to make it more independent of the environment.
+# More details can be found here: ttps://github.com/jingnanshi/pmc/pull/2
+option(PMC_BUILD_SHARED "Build PMC as a shared library" OFF)
+
 find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
