@@ -1,8 +1,8 @@
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.18)
 project(robin
-        VERSION 0.1
+        VERSION 1.2.0
         DESCRIPTION "Robust outlier rejection based on measurement compatibility graphs"
         LANGUAGES CXX
         )
@@ -32,9 +32,9 @@ include(DownloadExternal)
 #
 option(BUILD_DOCS "Build documentation." OFF)
 option(BUILD_TESTS "Enable testing with ctest." ON)
-option(BUILD_PYTHON_BINDINGS "Build python bindings." ON)
 option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings" OFF)
 option(USE_ASAN "Enable address sanitizer" OFF)
+option(USE_SYSTEM_EIGEN3 "Use system pre-installed Eigen" ON)
 option(ENABLE_DIAGNOSTIC_PRINT "Enable printing of diagnostic messages" OFF)
 
 if (ENABLE_DIAGNOSTIC_PRINT)
@@ -46,7 +46,7 @@ endif ()
 # Dependencies
 #
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-find_package(Eigen3 3.3 QUIET REQUIRED NO_MODULE)
+find_external_dependency("Eigen3" "Eigen3::Eigen" "${CMAKE_CURRENT_LIST_DIR}/cmake/DownloadEigen.cmake")
 find_package(OpenMP QUIET REQUIRED)
 robin_download_pmc()
 robin_download_xenium()
@@ -89,6 +89,7 @@ include(CMakePackageConfigHelpers)
 install(
         TARGETS robin
         EXPORT robinTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
@@ -113,6 +114,7 @@ export(
 install(
     TARGETS xenium pmc
     EXPORT robinTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
@@ -146,13 +148,6 @@ if (BUILD_TESTS)
     add_subdirectory(tests)
 endif ()
 
-# Python bindings
-if (BUILD_PYTHON_BINDINGS)
-    robin_download_pybind11()
-    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
-    add_subdirectory(python)
-endif ()
-
 # MATLAB bindings
 if (BUILD_MATLAB_BINDINGS)
     if (USE_ASAN)
@@ -177,7 +172,6 @@ message(STATUS "==============================================================="
 message(STATUS "============= Robin Configuration Options =====================")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_DOCS: ${BUILD_DOCS}")
-message(STATUS "BUILD_PYTHON_BINDINGS: ${BUILD_PYTHON_BINDINGS}")
 message(STATUS "BUILD_MATLAB_BINDINGS: ${BUILD_MATLAB_BINDINGS}")
 message(STATUS "USE_ASAN: ${USE_ASAN}")
 message(STATUS "ENABLE_DIAGNOSTIC_PRINT: ${ENABLE_DIAGNOSTIC_PRINT}")

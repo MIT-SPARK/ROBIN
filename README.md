@@ -26,10 +26,23 @@ and
 
 If you are interested in more works from us, please visit our lab page [here](http://web.mit.edu/sparklab/).
 
-# Build and Install
+--- 
+
+# :gear: Build & Installation
+
+## :package: Dependency 
+
 ROBIN has the following dependencies:
 1. OpenMP
 2. Eigen3
+
+Thus, follow the below commandline:
+
+```bash
+sudo apt-get install gcc g++ build-essential libeigen3-dev cmake python3-pip python3-dev git ninja-build -y
+```
+
+## C++ Installation 
 
 Run the following to build the library using CMake (inside the repo root directory):
 ```bash
@@ -41,15 +54,20 @@ The following CMake options are provided:
 ```
 BUILD_DOCS: Build documentation. Default: OFF
 BUILD_TESTS: Enable testing with ctest. Default: ON
-BUILD_PYTHON_BINDINGS: Build python bindings. Default: ON
 BUILD_MATLAB_BINDINGS: Build MATLAB bindings. Default: OFF
 USE_ASAN: Enable address sanitizer. Default: OFF
 ENABLE_DIAGNOSTIC_PRINT: Enable printing of diagnostic messages. Default: OFF
 ```
-To install Python bindings, after building the library (with `BUILD_PYTHON_BINDINGS=ON`), run:
+
+## Python Installation 
+
+It's simple! To install Python bindings, just run:
+
 ```bash
-cd build/python && pip install .
+pip3 install -e python/
 ```
+
+--- 
 
 # Third-party Data
 Some of the testing data are from the [Network Repository](http://networkrepository.com/index.php). 
