@@ -16,13 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Check system information
-        run: |
-          uname -a
-          lscpu
-          gcc -v
-          clang -v
-
       - name: Build sdist
         run: pipx run build --sdist ${{github.workspace}}/python/
       - name: Move sdist to dist
