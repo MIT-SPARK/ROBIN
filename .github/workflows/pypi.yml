@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, windows-2022, macos-15]
+        os: [ubuntu-20.04, windows-2022]
 
     steps:
       - uses: actions/checkout@v3
@@ -42,15 +42,7 @@ jobs:
           CIBW_BUILD: "cp310-*"
         with:
           package-dir: ${{github.workspace}}/python/
-
-      # To handle OpenMP issue in MacOS
-      - name: Install dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install llvm
-          echo 'export CC=/opt/homebrew/opt/llvm/bin/clang' >> $GITHUB_ENV
-          echo 'export CXX=/opt/homebrew/opt/llvm/bin/clang++' >> $GITHUB_ENV      
-
+    
       - name: Build all wheels
         if: github.event_name == 'release'
         uses: pypa/cibuildwheel@v2.22.0
