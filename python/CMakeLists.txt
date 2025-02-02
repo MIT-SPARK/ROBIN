@@ -10,6 +10,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(FetchContent)
+FetchContent_Declare(
+  pybind11
+  GIT_REPOSITORY https://github.com/pybind/pybind11
+  GIT_TAG master
+)
+FetchContent_MakeAvailable(pybind11)
+
 # NOTE (hlim): To generate `libpmc.a` instead of `libpmc.so`.
 # On a local computer, either `libpmc.a` or `libpmc.so` is fine,
 # but for PyPI, it should be `libpmc.a` to make it more independent of the environment.
@@ -17,7 +25,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(PMC_BUILD_SHARED "Build PMC as a shared library" OFF)
 
 find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
 
 message(STATUS "Python Interpreter Version: ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
 
