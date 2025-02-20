@@ -60,7 +60,7 @@ endfunction()
 function(robin_download_xenium)
 	download_project(PROJ xenium
 			GIT_REPOSITORY https://github.com/mpoeter/xenium
-			GIT_TAG        7ee5ed18b858106fc6e0fc19305aebfebce1bdf4
+			GIT_TAG        main
 			QUIET
 			)
 	add_library(xenium INTERFACE)
