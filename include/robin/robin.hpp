@@ -25,7 +25,9 @@ namespace robin {
 //
 enum class InlierGraphStructure {
   MAX_CORE = 0,
+#ifdef USE_PMC  
   MAX_CLIQUE = 1,
+#endif
 };
 
 std::vector<size_t> FindInlierStructure(const IGraph* g, InlierGraphStructure graph_structure);
