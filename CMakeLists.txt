@@ -36,6 +36,7 @@ option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings" OFF)
 option(USE_ASAN "Enable address sanitizer" OFF)
 option(USE_SYSTEM_EIGEN3 "Use system pre-installed Eigen" ON)
 option(ENABLE_DIAGNOSTIC_PRINT "Enable printing of diagnostic messages" OFF)
+option(WITH_PMC "Enable usage of pmc (GPL License - see notice)" OFF)
 
 if (ENABLE_DIAGNOSTIC_PRINT)
     message(STATUS "Enable printing of diagnostic messages.")
@@ -46,11 +47,34 @@ endif ()
 # Dependencies
 #
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-find_external_dependency("Eigen3" "Eigen3::Eigen" "${CMAKE_CURRENT_LIST_DIR}/cmake/DownloadEigen.cmake")
-find_package(OpenMP QUIET REQUIRED)
-robin_download_pmc()
-robin_download_xenium()
-add_subdirectory(${pmc_SOURCE_DIR} ${pmc_BINARY_DIR})
+find_package(Eigen3)
+if(NOT Eigen3_FOUND)
+    message(STATUS "Eigen3 not found. Downloading Eigen3.")
+    find_external_dependency("Eigen3" "Eigen3::Eigen" "${CMAKE_CURRENT_LIST_DIR}/cmake/DownloadEigen.cmake")
+endif()
+
+find_package(OpenMP REQUIRED)
+
+# pmc
+if(WITH_PMC)
+    message(WARNING "PMC is licensed under the GPL.  Enabling WITH_PMC will cause the resulting 'robin' library to be licensed under the GPL.")
+    find_package(pmc QUIET)
+    if(NOT pmc_FOUND)
+        robin_download_pmc()
+        add_subdirectory(${pmc_SOURCE_DIR} ${pmc_BINARY_DIR})
+    endif()
+    
+endif()
+
+find_package(xenium QUIET)
+if(NOT xenium_FOUND)
+    message(STATUS "Xenium not found. Downloading Xenium.")
+    robin_download_xenium()
+    #  Set the flag after downloading
+    set(XENIUM_DOWNLOADED TRUE)
+else()
+    set(XENIUM_DOWNLOADED FALSE)
+endif()
 
 #
 # Add robin target
@@ -63,18 +87,33 @@ file(GLOB
 
 add_library(robin STATIC ${SOURCE_FILES})
 add_library(robin::robin ALIAS robin)
+
+if(WITH_PMC)
 target_link_libraries(robin
         PUBLIC Eigen3::Eigen
-               xenium
+        xenium
         PRIVATE OpenMP::OpenMP_CXX
         PRIVATE pmc)
+        target_compile_definitions(robin PRIVATE USE_PMC) # CHANGED THIS LINE
+else()
+target_link_libraries(robin
+        PUBLIC Eigen3::Eigen
+        xenium
+        PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
 target_include_directories(
         robin
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        ${Eigen3_INCLUDE_DIRS}
+        ${xenium_INCLUDE_DIRS}
 )
+
+
+
 
 if (USE_ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fPIC")
@@ -111,13 +150,23 @@ export(
         NAMESPACE robin::
 )
 
-install(
-    TARGETS xenium pmc
-    EXPORT robinTargets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
+if(xenium_FOUND AND XENIUM_DOWNLOADED)
+    install(
+        TARGETS xenium
+        EXPORT robinTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+endif()
 
+if(WITH_PMC AND pmc_FOUND)
+    install(
+        TARGETS pmc
+        EXPORT robinTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+endif()
 
 install(
         EXPORT robinTargets
@@ -135,10 +184,12 @@ install(
 
 install(DIRECTORY include/robin DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-# To set forcibly xeniumConfig.cmake
-install(FILES cmake/xeniumConfig.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xenium
-        )
+if(xenium_FOUND)
+    # To set forcibly xeniumConfig.cmake
+    install(FILES cmake/xeniumConfig.cmake
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xenium
+            )
+endif()
 
 export(PACKAGE robin)
 
