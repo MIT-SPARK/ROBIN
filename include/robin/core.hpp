@@ -221,7 +221,7 @@ public:
       std::queue<EdgeType> edge_buffer;
 
 #pragma omp for
-      for (size_t k = 0; k < N * (N - 1) / 2; ++k) {
+      for (long k = 0; k < N * (N - 1) / 2; ++k) {
         size_t i = k / N;
         size_t j = k % N;
         if (j <= i) {
@@ -293,7 +293,7 @@ public:
 
 #pragma omp for
       // visit each edge twice
-      for (size_t i = 0; i < N; ++i) {
+      for (long i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
           subset_indices[0] = i;
           subset_indices[1] = j;
@@ -332,7 +332,7 @@ public:
 
 #pragma omp for
       // for loop that goes through each (i,j) edge twice
-      for (size_t i = 0; i < N; ++i) {
+      for (long i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
           subset_indices[0] = i;
           subset_indices[1] = j;
@@ -366,7 +366,7 @@ public:
 
 #pragma omp for
       // for loop that goes through each (i,j) edge twice
-      for (size_t i = 0; i < N; ++i) {
+      for (long i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
           subset_indices[0] = i;
           subset_indices[1] = j;
@@ -411,7 +411,7 @@ public:
       auto* subset_indices = new size_t[2];
 
 #pragma omp for
-      for (size_t k = 0; k < N * (N - 1) / 2; ++k) {
+      for (long k = 0; k < N * (N - 1) / 2; ++k) {
         size_t i = k / N;
         size_t j = k % N;
         if (j <= i) {
@@ -451,7 +451,7 @@ public:
       auto* subset_indices = new size_t[2];
 
 #pragma omp for
-      for (size_t k = 0; k < N * (N - 1) / 2; ++k) {
+      for (long k = 0; k < N * (N - 1) / 2; ++k) {
         size_t i = k / N;
         size_t j = k % N;
         if (j <= i) {
