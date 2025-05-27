@@ -61,8 +61,8 @@ std::vector<size_t> KCoreDecompositionSolver::GetKCore(const size_t& k) {
 //
 std::vector<size_t> MaxCliqueSolver::FindMaxClique(const IGraph& graph) const {
   // Create a PMC graph from the robin graph
-  vector<int> edges;
-  vector<long long> vertices;
+  std::vector<int> edges;
+  std::vector<long long> vertices;
   vertices.push_back(edges.size());
 
   size_t vertex_count = graph.VertexCount();
@@ -100,7 +100,7 @@ std::vector<size_t> MaxCliqueSolver::FindMaxClique(const IGraph& graph) const {
   in.vertex_search_order = "deg";
 
   // vector to represent max clique
-  vector<int> C;
+  std::vector<int> C;
 
   // upper-bound of max clique
   G.compute_cores();
@@ -122,12 +122,12 @@ std::vector<size_t> MaxCliqueSolver::FindMaxClique(const IGraph& graph) const {
   if (in.lb == 0) {
     // This means that max clique has a size of one
     ROBIN_DEBUG_ERROR_MSG("Max clique has a size of 1.");
-    vector<size_t> C_result(C.begin(), C.end());
+    std::vector<size_t> C_result(C.begin(), C.end());
     return C_result;
   }
 
   if (in.lb == in.ub) {
-    vector<size_t> C_result(C.begin(), C.end());
+    std::vector<size_t> C_result(C.begin(), C.end());
     return C_result;
   }
 
@@ -151,7 +151,7 @@ std::vector<size_t> MaxCliqueSolver::FindMaxClique(const IGraph& graph) const {
     }
   }
 
-  vector<size_t> C_result(C.begin(), C.end());
+  std::vector<size_t> C_result(C.begin(), C.end());
   return C_result;
 }
 
