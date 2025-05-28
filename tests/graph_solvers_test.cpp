@@ -208,6 +208,7 @@ TEST_CASE("k-core solver large graphs") {
   }
 }
 
+#ifdef USE_PMC
 TEST_CASE("max clique small graphs") {
   SECTION("complete graph") {
     // A complete graph with max clique # = 5
@@ -296,3 +297,4 @@ TEST_CASE("max clique multiple threads") {
     runner(g, 126);
   }
 }
+#endif

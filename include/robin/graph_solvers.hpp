@@ -68,6 +68,7 @@ private:
   size_t max_k_core_number_ = 0;
 };
 
+#ifdef USE_PMC
 /**
  * A facade to the Parallel Maximum Clique (PMC) library.
  *
@@ -119,5 +120,5 @@ public:
 private:
   Params params_;
 };
-
+#endif
 }

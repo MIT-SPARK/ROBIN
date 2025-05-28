@@ -9,7 +9,9 @@
 #include <omp.h>
 #include <random>
 
+#ifdef USE_PMC
 #include <pmc/pmc.h>
+#endif
 #include <robin/graph.hpp>
 #include <robin/pkc.hpp>
 
