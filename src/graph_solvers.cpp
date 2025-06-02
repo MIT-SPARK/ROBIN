@@ -4,7 +4,9 @@
 // Authors: Jingnan Shi, et al. (see THANKS for the full author list)
 // See LICENSE for the license information
 
+#ifdef USE_PMC
 #include <pmc/pmc.h>
+#endif
 #include <robin/pkc.hpp>
 #include <robin/graph_core.hpp>
 #include <robin/graph_solvers.hpp>
@@ -56,6 +58,7 @@ std::vector<size_t> KCoreDecompositionSolver::GetKCore(const size_t& k) {
   return k_core;
 }
 
+#ifdef USE_PMC
 //
 // Definitions for the MaxCliqueSolver class
 //
@@ -154,5 +157,5 @@ std::vector<size_t> MaxCliqueSolver::FindMaxClique(const IGraph& graph) const {
   std::vector<size_t> C_result(C.begin(), C.end());
   return C_result;
 }
-
+#endif
 }
