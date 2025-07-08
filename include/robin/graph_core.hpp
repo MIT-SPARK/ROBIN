@@ -24,6 +24,8 @@
 #include <robin/utils.hpp>
 #include <robin/views.hpp>
 
+#include <cassert>
+
 namespace robin {
 
 //

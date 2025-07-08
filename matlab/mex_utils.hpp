@@ -12,6 +12,8 @@
 
 #include <Eigen/Core>
 
+#include <cassert>
+
 // Credit to Effective Modern C++ Item 10
 template <typename E> constexpr typename std::underlying_type<E>::type toUType(E e) noexcept {
   return static_cast<typename std::underlying_type<E>::type>(e);
