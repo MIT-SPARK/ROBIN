@@ -24,6 +24,9 @@ FetchContent_MakeAvailable(pybind11)
 # More details can be found here: ttps://github.com/jingnanshi/pmc/pull/2
 option(PMC_BUILD_SHARED "Build PMC as a shared library" OFF)
 
+# Use system Eigen if available
+option(USE_SYSTEM_EIGEN3 "Use system pre-installed Eigen" ON)
+
 find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 
 message(STATUS "Python Interpreter Version: ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
