@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.20)
 
 project(robin_python_bindings)
 
@@ -28,12 +28,6 @@ find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 
 message(STATUS "Python Interpreter Version: ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
 
-# fix for clang
-# see: https://github.com/pybind/pybind11/issues/1818
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(spark_robin PUBLIC -fsized-deallocation)
-endif ()
-
 if (DEFINED SKBUILD)
     message(STATUS "Building with Scikit-Build")
 endif ()
@@ -51,6 +45,12 @@ else()
 endif()
 
 pybind11_add_module(spark_robin robin_py/robin_py.cpp)
+
+# fix for clang
+# see: https://github.com/pybind/pybind11/issues/1818
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(spark_robin PUBLIC -fsized-deallocation)
+endif ()
 
 target_link_libraries(spark_robin PUBLIC robin::robin pmc)
 

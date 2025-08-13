@@ -32,4 +32,9 @@ classifiers = [
 ]
 
 [tool.scikit-build]
+cmake.source-dir = "."
+wheel.build-tag = "py3"
+
+[tool.scikit-build.cmake.define]
+SKBUILD = "ON"
 
