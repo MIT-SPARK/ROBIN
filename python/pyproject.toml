@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit_build_core", "pybind11"]
+requires = ["scikit_build_core>=0.8.0", "pybind11>=2.12.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -33,7 +33,9 @@ classifiers = [
 
 [tool.scikit-build]
 cmake.source-dir = "."
-wheel.build-tag = "py3"
+wheel.build-tag = ""
+cmake.minimum-version = "3.20"
+cmake.build-type = "Release"
 
 [tool.scikit-build.cmake.define]
 SKBUILD = "ON"
