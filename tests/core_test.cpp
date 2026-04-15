@@ -283,6 +283,65 @@ TEST_CASE("large compatibility graph adj list") {
   std::cout << "Core time   (ms): " << core_finding_time / trials << std::endl;
 }
 
+TEST_CASE("graph construction methods produce same edge sets") {
+  // Validates that stack-allocation refactor doesn't break any construction path.
+  // Uses a small deterministic problem so results are reproducible.
+  robin::test::VecAveragingProblemFixture fixture;
+  Eigen::Vector2d exp_vector;
+  exp_vector << 2, 2;
+  double noise_bound = 0.1;
+  size_t N = 5;
+  auto measurements = fixture.GenerateMeasurements(exp_vector, N, 0, noise_bound);
+  robin::VectorY measurements_set(measurements);
+  robin::SvaCompCheck sva_comp_check(2 * noise_bound);
+
+  robin::CompGraphConstructor<robin::VectorY, robin::SvaCompCheck, 2> graph_constructor;
+  graph_constructor.SetCompCheckFunction(&sva_comp_check);
+  graph_constructor.SetMeasurements(&measurements_set);
+
+  // Helper: extract sorted edge set from an AdjListGraph
+  auto extract_edges = [](robin::AdjListGraph& g) {
+    std::set<std::pair<size_t, size_t>> edges;
+    for (size_t i = 0; i < g.VertexCount(); ++i) {
+      for (size_t k = 0; k < g.GetVertexDegree(i); ++k) {
+        size_t j = g.GetVertexEdge(i, k);
+        // store each edge with smaller index first
+        edges.insert(i < j ? std::make_pair(i, j) : std::make_pair(j, i));
+      }
+    }
+    return edges;
+  };
+
+  SECTION("serial vs parallel_edge_buffer vs parallel_vertex") {
+    robin::AdjListGraph g_serial;
+    graph_constructor.BuildCompGraph_serial(&g_serial);
+    auto edges_serial = extract_edges(g_serial);
+
+    robin::AdjListGraph g_edge_buf;
+    graph_constructor.BuildCompGraph_parallel_edge_buffer(&g_edge_buf);
+    auto edges_edge_buf = extract_edges(g_edge_buf);
+
+    robin::AdjListGraph g_vertex;
+    graph_constructor.BuildCompGraph_parallel_vertex(&g_vertex);
+    auto edges_vertex = extract_edges(g_vertex);
+
+    // All methods must produce the same vertex and edge counts
+    REQUIRE(g_serial.VertexCount() == N);
+    REQUIRE(g_edge_buf.VertexCount() == N);
+    REQUIRE(g_vertex.VertexCount() == N);
+
+    REQUIRE(edges_serial.size() == edges_edge_buf.size());
+    REQUIRE(edges_serial.size() == edges_vertex.size());
+
+    // All methods must produce identical edge sets
+    REQUIRE(edges_serial == edges_edge_buf);
+    REQUIRE(edges_serial == edges_vertex);
+
+    // For N=5 with no outliers and tight noise bound, expect complete graph
+    REQUIRE(edges_serial.size() == N * (N - 1) / 2);
+  }
+}
+
 TEST_CASE("sample comp graph construction") {
   SECTION("2d vector averaging") {
     //
