@@ -296,3 +296,96 @@ TEST_CASE("max clique multiple threads") {
     runner(g, 126);
   }
 }
+
+TEST_CASE("k-core early termination produces same results") {
+  SECTION("sparse graph with gaps in core numbers") {
+    // Triangle (core 2) + isolated edge (core 1) + isolated vertices (core 0)
+    robin::AdjListGraph g;
+    g.PopulateVertices(8);
+    // Triangle: 0-1-2
+    g.AddEdge(0, 1);
+    g.AddEdge(1, 2);
+    g.AddEdge(0, 2);
+    // Isolated edge: 3-4
+    g.AddEdge(3, 4);
+    // Isolated vertices: 5, 6, 7
+
+    robin::KCoreDecompositionSolver solver_bz(
+        robin::KCoreDecompositionSolver::KCORE_SOLVER_MODE::BZ_SERIAL);
+    solver_bz.Solve(g);
+    auto core_bz = solver_bz.GetCoreNumbers();
+
+    robin::KCoreDecompositionSolver solver_serial(
+        robin::KCoreDecompositionSolver::KCORE_SOLVER_MODE::PKC_SERIAL);
+    solver_serial.Solve(g);
+    auto core_serial = solver_serial.GetCoreNumbers();
+
+    // Both should produce the same core numbers
+    REQUIRE(core_bz.size() == core_serial.size());
+    for (size_t i = 0; i < core_bz.size(); ++i) {
+      REQUIRE(core_bz[i] == core_serial[i]);
+    }
+
+    // Verify specific core numbers
+    REQUIRE(core_bz[0] == 2); // triangle
+    REQUIRE(core_bz[1] == 2);
+    REQUIRE(core_bz[2] == 2);
+    REQUIRE(core_bz[3] == 1); // edge
+    REQUIRE(core_bz[4] == 1);
+    REQUIRE(core_bz[5] == 0); // isolated
+    REQUIRE(core_bz[6] == 0);
+    REQUIRE(core_bz[7] == 0);
+  }
+
+  SECTION("graph with large gap in core numbers") {
+    // K5 (core 4) plus isolated vertices -- levels 1, 2, 3 are empty
+    robin::AdjListGraph g;
+    g.PopulateVertices(10);
+    // K5 on vertices 0-4
+    for (size_t i = 0; i < 5; ++i) {
+      for (size_t j = i + 1; j < 5; ++j) {
+        g.AddEdge(i, j);
+      }
+    }
+    // vertices 5-9 are isolated
+
+    robin::KCoreDecompositionSolver solver(
+        robin::KCoreDecompositionSolver::KCORE_SOLVER_MODE::PKC_SERIAL);
+    solver.Solve(g);
+    auto core = solver.GetCoreNumbers();
+
+    for (size_t i = 0; i < 5; ++i) {
+      REQUIRE(core[i] == 4);
+    }
+    for (size_t i = 5; i < 10; ++i) {
+      REQUIRE(core[i] == 0);
+    }
+    REQUIRE(solver.GetMaxCoreNumber() == 4);
+  }
+
+  SECTION("complete graph — no early termination opportunity") {
+    robin::AdjListGraph g;
+    g.PopulateVertices(5);
+    for (size_t i = 0; i < 5; ++i) {
+      for (size_t j = i + 1; j < 5; ++j) {
+        g.AddEdge(i, j);
+      }
+    }
+
+    robin::KCoreDecompositionSolver solver(
+        robin::KCoreDecompositionSolver::KCORE_SOLVER_MODE::PKC_SERIAL);
+    solver.Solve(g);
+    REQUIRE(solver.GetMaxCoreNumber() == 4);
+    REQUIRE(solver.GetMaxKCore().size() == 5);
+  }
+
+  SECTION("empty graph") {
+    robin::AdjListGraph g;
+    g.PopulateVertices(0);
+
+    robin::KCoreDecompositionSolver solver(
+        robin::KCoreDecompositionSolver::KCORE_SOLVER_MODE::PKC_SERIAL);
+    solver.Solve(g);
+    REQUIRE(solver.GetMaxKCore().empty());
+  }
+}

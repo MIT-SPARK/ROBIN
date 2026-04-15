@@ -4,6 +4,8 @@
 // Authors: Jingnan Shi, et al. (see THANKS for the full author list)
 // See LICENSE for the license information
 
+#include <cstdint>
+
 #include <robin/pkc.hpp>
 
 int free_graph(robin::pkc::graph_t* g) {
@@ -514,12 +516,25 @@ void robin::pkc::PKC_original_serial(const IGraph& g, std::vector<size_t>* deg) 
 
   while (visited < n) {
 
+    // Scan for vertices at current level, track min degree above level
+    size_t min_above_level = SIZE_MAX;
     for (long i = 0; i < n; i++) {
-
       if ((*deg)[i] == level) {
         buff[end] = i;
         end++;
+      } else if ((*deg)[i] > level && (*deg)[i] < min_above_level) {
+        min_above_level = (*deg)[i];
       }
+    }
+
+    // If no vertices at this level, skip to next non-empty level
+    if (end == 0) {
+      if (min_above_level < SIZE_MAX) {
+        level = min_above_level;
+      } else {
+        break; // All vertices processed
+      }
+      continue;
     }
 
     while (start < end) {
