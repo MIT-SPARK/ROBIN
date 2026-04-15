@@ -50,6 +50,7 @@ find_external_dependency("Eigen3" "Eigen3::Eigen" "${CMAKE_CURRENT_LIST_DIR}/cma
 find_package(OpenMP QUIET REQUIRED)
 robin_download_pmc()
 robin_download_xenium()
+robin_download_nanoflann()
 add_subdirectory(${pmc_SOURCE_DIR} ${pmc_BINARY_DIR})
 
 #
@@ -66,6 +67,7 @@ add_library(robin::robin ALIAS robin)
 target_link_libraries(robin
         PUBLIC Eigen3::Eigen
                xenium
+               nanoflann
         PRIVATE OpenMP::OpenMP_CXX
         PRIVATE pmc)
 target_include_directories(
@@ -112,7 +114,7 @@ export(
 )
 
 install(
-    TARGETS xenium pmc
+    TARGETS xenium pmc nanoflann
     EXPORT robinTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

@@ -90,6 +90,39 @@ function(robin_download_xenium)
 	install(DIRECTORY ${xenium_SOURCE_DIR}/xenium DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endfunction()
 
+# nanoflann
+function(robin_download_nanoflann)
+	download_project(PROJ nanoflann
+			GIT_REPOSITORY https://github.com/jlblancoc/nanoflann.git
+			GIT_TAG        v1.6.2
+			QUIET
+			)
+	add_library(nanoflann INTERFACE)
+	target_include_directories(nanoflann
+			INTERFACE
+			$<BUILD_INTERFACE:${nanoflann_SOURCE_DIR}/include>
+			$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+	install(
+			TARGETS nanoflann
+			EXPORT nanoflannTargets
+			ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	)
+
+	export(
+			EXPORT nanoflannTargets
+			FILE ${CMAKE_CURRENT_BINARY_DIR}/nanoflannTargets.cmake
+			NAMESPACE nanoflann::
+	)
+
+	install(
+			EXPORT nanoflannTargets
+			FILE nanoflannTargets.cmake
+			DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nanoflann/
+			NAMESPACE nanoflann::
+	)
+endfunction()
+
 # For handling Eigen3 library
 function(find_external_dependency PACKAGE_NAME TARGET_NAME INCLUDED_CMAKE_PATH)
   string(TOUPPER ${PACKAGE_NAME} PACKAGE_NAME_UP)
