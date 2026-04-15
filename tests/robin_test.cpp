@@ -351,6 +351,86 @@ TEST_CASE("3d reg") {
   }
 }
 
+TEST_CASE("3d reg precomputed pipeline") {
+  // Verify the optimized precomputed path (used by Make3dRegInvGraph) produces correct results
+  Eigen::Matrix4d T;
+  // clang-format off
+  T << 9.96926560e-01,  6.68735757e-02, -4.06664421e-02, -1.15576939e-01,
+      -6.61289946e-02, 9.97617877e-01,  1.94008687e-02, -3.87705398e-02,
+      4.18675510e-02, -1.66517807e-02,  9.98977765e-01, 1.14874890e-01,
+      0,              0,                0,              1;
+  // clang-format on
+
+  SECTION("no outliers") {
+    size_t N = 20;
+    Eigen::Matrix<double, 3, Eigen::Dynamic> src_points =
+        Eigen::Matrix<double, 3, Eigen::Dynamic>::Random(3, N);
+    Eigen::Matrix<double, 4, Eigen::Dynamic> src_h;
+    src_h.resize(4, src_points.cols());
+    src_h.topRows(3) = src_points;
+    src_h.bottomRows(1) = Eigen::Matrix<double, 1, Eigen::Dynamic>::Ones(N);
+
+    Eigen::Matrix<double, 4, Eigen::Dynamic> tgt_h = T * src_h;
+    Eigen::Matrix<double, 3, Eigen::Dynamic> tgt_points = tgt_h.topRows(3);
+
+    double noise_bound = 0.1;
+    Eigen::Matrix<double, 3, Eigen::Dynamic> noise =
+        Eigen::Matrix<double, 3, Eigen::Dynamic>::Random(3, N) * noise_bound;
+    tgt_points = tgt_points + noise;
+
+    // Make3dRegInvGraph now uses precomputed path internally
+    auto* g = robin::Make3dRegInvGraph(src_points, tgt_points, 2 * noise_bound);
+
+    auto actual_max_clique_indices =
+        robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
+
+    // All points should be inliers
+    std::vector<size_t> expected_inliers;
+    for (size_t i = 0; i < N; ++i)
+      expected_inliers.push_back(i);
+    REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
+
+    delete g;
+  }
+
+  SECTION("with outliers") {
+    size_t N = 20;
+    Eigen::Matrix<double, 3, Eigen::Dynamic> src_points =
+        Eigen::Matrix<double, 3, Eigen::Dynamic>::Random(3, N);
+    Eigen::Matrix<double, 4, Eigen::Dynamic> src_h;
+    src_h.resize(4, src_points.cols());
+    src_h.topRows(3) = src_points;
+    src_h.bottomRows(1) = Eigen::Matrix<double, 1, Eigen::Dynamic>::Ones(N);
+
+    Eigen::Matrix<double, 4, Eigen::Dynamic> tgt_h = T * src_h;
+    Eigen::Matrix<double, 3, Eigen::Dynamic> tgt_points = tgt_h.topRows(3);
+
+    double noise_bound = 0.1;
+    Eigen::Matrix<double, 3, Eigen::Dynamic> noise =
+        Eigen::Matrix<double, 3, Eigen::Dynamic>::Random(3, N) * noise_bound;
+    tgt_points = tgt_points + noise;
+
+    // Create outliers at indices 2 and 7
+    tgt_points.col(2) *= 100;
+    tgt_points.col(7) *= 100;
+
+    auto* g = robin::Make3dRegInvGraph(src_points, tgt_points, 2 * noise_bound);
+
+    auto actual_max_clique_indices =
+        robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
+
+    // Outlier indices should not appear in clique
+    std::set<size_t> clique_set(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
+    REQUIRE(clique_set.count(2) == 0);
+    REQUIRE(clique_set.count(7) == 0);
+    REQUIRE(actual_max_clique_indices.size() == N - 2);
+
+    delete g;
+  }
+}
+
 TEST_CASE("3d reg large instance") {
   // For benchmarking / profiling
   // an arbitrary transformation matrix

@@ -283,6 +283,74 @@ TEST_CASE("large compatibility graph adj list") {
   std::cout << "Core time   (ms): " << core_finding_time / trials << std::endl;
 }
 
+TEST_CASE("precomputed 3d reg graph matches existing path") {
+  // an arbitrary transformation matrix
+  Eigen::Matrix4d T;
+  // clang-format off
+  T << 9.96926560e-01,  6.68735757e-02, -4.06664421e-02, -1.15576939e-01,
+      -6.61289946e-02, 9.97617877e-01,  1.94008687e-02, -3.87705398e-02,
+      4.18675510e-02, -1.66517807e-02,  9.98977765e-01, 1.14874890e-01,
+      0,              0,                0,              1;
+  // clang-format on
+
+  size_t N = 50;
+
+  // random 3d points
+  Eigen::Matrix<double, 3, Eigen::Dynamic> src_points =
+      Eigen::Matrix<double, 3, Eigen::Dynamic>::Random(3, N);
+  Eigen::Matrix<double, 4, Eigen::Dynamic> src_h;
+  src_h.resize(4, src_points.cols());
+  src_h.topRows(3) = src_points;
+  src_h.bottomRows(1) = Eigen::Matrix<double, 1, Eigen::Dynamic>::Ones(N);
+
+  // apply transformation
+  Eigen::Matrix<double, 4, Eigen::Dynamic> tgt_h = T * src_h;
+  Eigen::Matrix<double, 3, Eigen::Dynamic> tgt_points = tgt_h.topRows(3);
+
+  // noise bound
+  double noise_bound = 0.1;
+
+  // add noise
+  Eigen::Matrix<double, 3, Eigen::Dynamic> noise =
+      Eigen::Matrix<double, 3, Eigen::Dynamic>::Random(3, N) * noise_bound;
+  tgt_points = tgt_points + noise;
+
+  SECTION("precomputed produces same edge set as atomic CSR") {
+    // Build graph via existing atomic CSR path
+    robin::Points3d measurements(tgt_points);
+    robin::Points3d model(src_points);
+    robin::Points3dRegCompCheck comp_check(&model, noise_bound);
+    robin::CompGraphConstructor<robin::Points3d, robin::Points3dRegCompCheck, 2> graph_constructor;
+    graph_constructor.SetCompCheckFunction(&comp_check);
+    graph_constructor.SetMeasurements(&measurements);
+    robin::AtomicCSRGraph existing_g;
+    graph_constructor.BuildCSRCompGraph_parallel_two_passes_atomic(&existing_g);
+
+    // Build graph via precomputed path
+    auto* precomputed_g = robin::BuildCSRCompGraph_3dReg_precomputed(
+        tgt_points.data(), src_points.data(), N, noise_bound);
+    REQUIRE(precomputed_g != nullptr);
+
+    // Compare: extract sorted edge sets from both graphs
+    REQUIRE(precomputed_g->VertexCount() == existing_g.VertexCount());
+
+    // Compare per-vertex neighbor sets
+    for (size_t v = 0; v < N; ++v) {
+      std::set<size_t> existing_neighbors;
+      for (size_t e = 0; e < existing_g.GetVertexDegree(v); ++e) {
+        existing_neighbors.insert(existing_g.GetVertexEdge(v, e));
+      }
+      std::set<size_t> precomputed_neighbors;
+      for (size_t e = 0; e < precomputed_g->GetVertexDegree(v); ++e) {
+        precomputed_neighbors.insert(precomputed_g->GetVertexEdge(v, e));
+      }
+      REQUIRE(existing_neighbors == precomputed_neighbors);
+    }
+
+    delete precomputed_g;
+  }
+}
+
 TEST_CASE("sample comp graph construction") {
   SECTION("2d vector averaging") {
     //

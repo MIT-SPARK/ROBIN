@@ -51,6 +51,33 @@ TEST_CASE("n choose k") {
   }
 }
 
+TEST_CASE("pair_from_linear_index") {
+  SECTION("N=5: all 10 pairs unique and valid") {
+    size_t N = 5;
+    std::set<std::pair<size_t, size_t>> pairs;
+    for (size_t k = 0; k < N * (N - 1) / 2; ++k) {
+      auto [i, j] = robin::pair_from_linear_index(k, N);
+      REQUIRE(i < j);
+      REQUIRE(j < N);
+      pairs.insert({i, j});
+    }
+    REQUIRE(pairs.size() == N * (N - 1) / 2);
+  }
+
+  SECTION("round-trip for various N") {
+    for (size_t N : {10, 50, 100}) {
+      std::set<std::pair<size_t, size_t>> pairs;
+      for (size_t k = 0; k < N * (N - 1) / 2; ++k) {
+        auto [i, j] = robin::pair_from_linear_index(k, N);
+        REQUIRE(i < j);
+        REQUIRE(j < N);
+        pairs.insert({i, j});
+      }
+      REQUIRE(pairs.size() == N * (N - 1) / 2);
+    }
+  }
+}
+
 TEST_CASE("Combination decode") {
   SECTION("2 choose 2") {
     size_t n = 2;
