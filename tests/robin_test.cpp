@@ -17,6 +17,50 @@
 
 #include <robin/robin.hpp>
 
+TEST_CASE("zero-degree vertex filtering") {
+  SECTION("graph with isolated vertices") {
+    // Vertices 0,1,2 form a clique; vertices 3-9 are isolated
+    robin::AdjListGraph g;
+    g.PopulateVertices(10);
+    g.AddEdge(0, 1);
+    g.AddEdge(1, 2);
+    g.AddEdge(0, 2);
+
+    auto result_core = robin::FindInlierStructure(&g, robin::InlierGraphStructure::MAX_CORE);
+    REQUIRE(result_core.size() == 3);
+    std::sort(result_core.begin(), result_core.end());
+    REQUIRE(result_core == std::vector<size_t>{0, 1, 2});
+
+    auto result_clique = robin::FindInlierStructure(&g, robin::InlierGraphStructure::MAX_CLIQUE);
+    REQUIRE(result_clique.size() == 3);
+    std::sort(result_clique.begin(), result_clique.end());
+    REQUIRE(result_clique == std::vector<size_t>{0, 1, 2});
+  }
+
+  SECTION("all vertices isolated") {
+    robin::AdjListGraph g;
+    g.PopulateVertices(5);
+    // No edges
+    auto result = robin::FindInlierStructure(&g, robin::InlierGraphStructure::MAX_CORE);
+    REQUIRE(result.empty());
+  }
+
+  SECTION("no isolated vertices") {
+    // Complete graph on 4 vertices — all have degree 3
+    robin::AdjListGraph g;
+    g.PopulateVertices(4);
+    g.AddEdge(0, 1);
+    g.AddEdge(0, 2);
+    g.AddEdge(0, 3);
+    g.AddEdge(1, 2);
+    g.AddEdge(1, 3);
+    g.AddEdge(2, 3);
+
+    auto result = robin::FindInlierStructure(&g, robin::InlierGraphStructure::MAX_CLIQUE);
+    REQUIRE(result.size() == 4);
+  }
+}
+
 TEST_CASE("vector averaging") {
   //
   // Prepare test data
