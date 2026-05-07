@@ -8,8 +8,10 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <set>

@@ -8,6 +8,7 @@
 
 #define _USE_MATH_DEFINES
 
+#include <cassert>
 #include <cmath>
 
 #include <robin/core.hpp>
