@@ -35,7 +35,14 @@ jobs:
         # jobs queued against it now hang forever waiting for a runner that
         # never arrives. cibuildwheel produces manylinux wheels inside its
         # own Docker image, so the host OS only affects the runner itself.
-        os: [ubuntu-22.04, windows-2022]
+        #
+        # windows-2022 is intentionally omitted: ROBIN's src/pkc.cpp uses
+        # __sync_fetch_and_add/sub (GCC builtin) and unsigned OpenMP for
+        # loop indices (rejected by MSVC's OpenMP 2.0), and
+        # include/robin/problems.hpp depends on M_PI without
+        # _USE_MATH_DEFINES. These need their own follow-up patches
+        # before Windows wheels can build.
+        os: [ubuntu-22.04]
 
     steps:
       - uses: actions/checkout@v3
