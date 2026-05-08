@@ -31,7 +31,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2022]
+        # ubuntu-20.04 hosted runners were retired by GitHub in April 2025;
+        # jobs queued against it now hang forever waiting for a runner that
+        # never arrives. cibuildwheel produces manylinux wheels inside its
+        # own Docker image, so the host OS only affects the runner itself.
+        os: [ubuntu-22.04, windows-2022]
 
     steps:
       - uses: actions/checkout@v3
