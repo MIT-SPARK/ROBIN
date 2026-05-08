@@ -20,7 +20,7 @@ endfunction()
 function(robin_download_pmc)
 	download_project(PROJ pmc
 			GIT_REPOSITORY https://github.com/MIT-SPARK/pmc.git
-			GIT_TAG        93f76aa9dfcc24ebfa5a183907669c1fdf95bd07
+			GIT_TAG        4bbd40ababd8e925c4e1845c509173afe766b443
 			QUIET
 			)
 	set(pmc_SOURCE_DIR "${pmc_SOURCE_DIR}" PARENT_SCOPE)
