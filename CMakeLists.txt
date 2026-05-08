@@ -1,8 +1,8 @@
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.10)
 project(robin
-        VERSION 1.2.5
+        VERSION 1.2.6
         DESCRIPTION "Robust outlier rejection based on measurement compatibility graphs"
         LANGUAGES CXX
         )
