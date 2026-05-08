@@ -13,10 +13,14 @@ function(robin_download_pybind11)
 endfunction()
 
 # pmc
+# We pin MIT-SPARK's fork (ahead of upstream jingnanshi/pmc by Windows MSVC
+# compatibility patches: POSIX header guards + portable std::chrono timing +
+# MSVC-aware compile options). Behavior on Linux/macOS is unchanged from
+# upstream master.
 function(robin_download_pmc)
 	download_project(PROJ pmc
-			GIT_REPOSITORY https://github.com/jingnanshi/pmc.git
-			GIT_TAG        master
+			GIT_REPOSITORY https://github.com/MIT-SPARK/pmc.git
+			GIT_TAG        93f76aa9dfcc24ebfa5a183907669c1fdf95bd07
 			QUIET
 			)
 	set(pmc_SOURCE_DIR "${pmc_SOURCE_DIR}" PARENT_SCOPE)
