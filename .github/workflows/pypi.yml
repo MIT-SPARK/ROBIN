@@ -40,17 +40,24 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # xenium (a transitive dep of robin) requires 64-bit pointers
+      # (marked_ptr static_assert) and only defines XENIUM_ARCH_X86 for
+      # x86_64 / AMD64. Skip 32-bit builds (manylinux i686, win32) outright
+      # — they cannot work and only delay CI.
       - name: Build test wheels (only PRs)
         if: github.event_name != 'release'
         uses: pypa/cibuildwheel@v2.22.0
         env: # build 1 build per platform just to make sure we can do it later when releasing
           CIBW_BUILD: "cp310-*"
+          CIBW_ARCHS: auto64
         with:
           package-dir: ${{github.workspace}}/python/
-    
+
       - name: Build all wheels
         if: github.event_name == 'release'
         uses: pypa/cibuildwheel@v2.22.0
+        env:
+          CIBW_ARCHS: auto64
         with:
           package-dir: ${{github.workspace}}/python/
 
