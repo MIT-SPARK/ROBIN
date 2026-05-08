@@ -2,7 +2,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 cmake_minimum_required(VERSION 3.10)
 project(robin
-        VERSION 1.2.6
+        VERSION 1.2.7
         DESCRIPTION "Robust outlier rejection based on measurement compatibility graphs"
         LANGUAGES CXX
         )
@@ -51,6 +51,17 @@ find_package(OpenMP QUIET REQUIRED)
 robin_download_pmc()
 robin_download_xenium()
 add_subdirectory(${pmc_SOURCE_DIR} ${pmc_BINARY_DIR})
+
+# PMC's CMakeLists hardcodes GCC/Clang warning flags (-Wall -Werror -Wextra
+# -Wno-*) as PRIVATE COMPILE_OPTIONS. MSVC's cl rejects /Werror as an invalid
+# numeric argument, breaking the wheel build on Windows. Drop them on MSVC.
+if(MSVC)
+    foreach(_pmc_target pmc pmc_main)
+        if(TARGET ${_pmc_target})
+            set_property(TARGET ${_pmc_target} PROPERTY COMPILE_OPTIONS "")
+        endif()
+    endforeach()
+endif()
 
 #
 # Add robin target
