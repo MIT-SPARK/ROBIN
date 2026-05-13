@@ -81,6 +81,8 @@ public:
   So3Y() = delete;
   explicit So3Y(std::vector<Eigen::Matrix3d> y_set) : y_set_(std::move(y_set)) {}
   Eigen::Matrix3d operator[](size_t i) const override { return y_set_[i]; }
+  /// Zero-copy const ref access. Safe because So3Y is backed by std::vector (no temporary).
+  const Eigen::Matrix3d& ref(size_t i) const { return y_set_[i]; }
   size_t size() const override { return y_set_.size(); }
 
 private:
@@ -133,7 +135,7 @@ template <typename DistFn> struct SraCompCheck {
    */
   bool operator()(So3Y* measurements, const size_t* subset_indices) {
     double dist =
-        (*dist_fn)((*measurements)[subset_indices[0]], (*measurements)[subset_indices[1]]);
+        (*dist_fn)(measurements->ref(subset_indices[0]), measurements->ref(subset_indices[1]));
     return dist <= noise_threshold;
   }
 

@@ -48,6 +48,11 @@ public:
    * @brief Return the ith point in the set
    * @param i
    * @return
+   *
+   * Returns by value intentionally: matrix-backed types (VectorY, Points3d,
+   * Points3dWithNormals) return Eigen column expressions which are temporaries
+   * and cannot be returned by reference. Types backed by std::vector (e.g. So3Y)
+   * can provide a separate const-ref accessor (ref()) for zero-copy access.
    */
   virtual P operator[](size_t i) const = 0;
 };
@@ -95,8 +100,7 @@ public:
     size_t nr_subsets = robin::Choose(N, CompCheckFuncArity);
 
     // for each possible subset, check compatibility
-    auto* subset_indices = new size_t[CompCheckFuncArity];
-    auto* edge_pair_indices = new size_t[2];
+    size_t subset_indices[CompCheckFuncArity];
     for (size_t i = 0; i < nr_subsets; ++i) {
       // compute current subset indices
       robin::CombinationDecode(N, CompCheckFuncArity, i, subset_indices);
@@ -114,9 +118,6 @@ public:
         }
       }
     }
-
-    delete[] edge_pair_indices;
-    delete[] subset_indices;
   }
 
   /**
@@ -139,8 +140,7 @@ public:
     // for each possible subset, check compatibility
 #pragma omp parallel default(none) shared(N, nr_subsets, edge_queue)
     {
-      auto* subset_indices = new size_t[CompCheckFuncArity];
-      auto* edge_pair_indices = new size_t[2];
+      size_t subset_indices[CompCheckFuncArity];
 #pragma omp for
       for (size_t i = 0; i < nr_subsets; ++i) {
         // compute current subset indices
@@ -165,9 +165,6 @@ public:
           }
         }
       }
-
-      delete[] edge_pair_indices;
-      delete[] subset_indices;
     };
 
     // add edges to graph
@@ -217,7 +214,7 @@ public:
     // 2. a critical section for dequeuing edges into graph
 #pragma omp parallel default(none) shared(g, N)
     {
-      auto* subset_indices = new size_t[2];
+      size_t subset_indices[2];
       std::queue<EdgeType> edge_buffer;
 
 #pragma omp for
@@ -243,7 +240,6 @@ public:
           edge_buffer.pop();
         }
       };
-      delete[] subset_indices;
     }
   }
 
@@ -255,7 +251,7 @@ public:
     // parallel compatibility graph building
     // 1. each thread initialize a queue for storing edges
     // 2. a critical section for dequeuing edges into graph
-    auto* subset_indices = new size_t[2];
+    size_t subset_indices[2];
 
     for (size_t k = 0; k < N * (N - 1) / 2; ++k) {
       size_t i = k / N;
@@ -271,8 +267,6 @@ public:
         g->AddEdgeUnsafe(i, j);
       }
     }
-
-    delete[] subset_indices;
   }
 
   /**
@@ -289,7 +283,7 @@ public:
     // 2. a critical section for dequeuing edges into graph
 #pragma omp parallel default(none) shared(g, N, adj_list, edge_count)
     {
-      auto* subset_indices = new size_t[2];
+      size_t subset_indices[2];
 
 #pragma omp for
       // visit each edge twice
@@ -304,8 +298,6 @@ public:
           }
         }
       }
-
-      delete[] subset_indices;
     }
 
     g->Clear();
@@ -328,7 +320,7 @@ public:
 #pragma omp parallel default(none) shared(g, N, offsets)
     {
       // subset_indices: a buffer for each thread
-      auto* subset_indices = new size_t[2];
+      size_t subset_indices[2];
 
 #pragma omp for
       // for loop that goes through each (i,j) edge twice
@@ -343,8 +335,6 @@ public:
           }
         }
       }
-
-      delete[] subset_indices;
     }
 
     // prefix sum to convert vertex degrees to offsets array for CSR graph
@@ -362,7 +352,7 @@ public:
 #pragma omp parallel default(none) shared(g, N, edges, offsets, vertex_local_offsets)
     {
       // subset_indices: a buffer for each thread
-      auto* subset_indices = new size_t[2];
+      size_t subset_indices[2];
 
 #pragma omp for
       // for loop that goes through each (i,j) edge twice
@@ -379,8 +369,6 @@ public:
           }
         }
       }
-
-      delete[] subset_indices;
     }
 
     // now the edge & offsets array are ready to be moved into a CSR graph
@@ -408,7 +396,7 @@ public:
 #pragma omp parallel default(none) shared(g, N, offsets)
     {
       // subset_indices: a buffer for each thread
-      auto* subset_indices = new size_t[2];
+      size_t subset_indices[2];
 
 #pragma omp for
       for (size_t k = 0; k < N * (N - 1) / 2; ++k) {
@@ -426,8 +414,6 @@ public:
           offsets[j + 1]++;
         }
       }
-
-      delete[] subset_indices;
     }
 
     // prefix sum to convert vertex degrees to offsets array for CSR graph
@@ -448,7 +434,7 @@ public:
 #pragma omp parallel default(none) shared(g, N, edges, offsets, vertex_local_offsets)
     {
       // subset_indices: a buffer for each thread
-      auto* subset_indices = new size_t[2];
+      size_t subset_indices[2];
 
 #pragma omp for
       for (size_t k = 0; k < N * (N - 1) / 2; ++k) {
@@ -470,10 +456,9 @@ public:
           // update edge from side of vertex j
           // put the edge in the edge array & increment local edge index offset
           auto idx_j = vertex_local_offsets[j]++;
-          edges[offsets[j].load() + idx_j].store(i);        }
+          edges[offsets[j].load() + idx_j].store(i);
+        }
       }
-
-      delete[] subset_indices;
     }
 
     // now the edge & offsets array are ready to be moved into a CSR graph
