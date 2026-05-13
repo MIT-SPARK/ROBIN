@@ -103,10 +103,12 @@ TEST_CASE("large compatibility graph csr") {
   for (size_t i = 0; i < trials; ++i) {
     auto start = std::chrono::high_resolution_clock::now();
     auto* g = graph_constructor.BuildCompGraph(robin::GraphsStorageType::CSR);
+    
     auto t1 = std::chrono::high_resolution_clock::now();
-
+#ifdef USE_PMC
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+#endif        
     auto t2 = std::chrono::high_resolution_clock::now();
 
     auto actual_max_core_indices =
@@ -115,13 +117,17 @@ TEST_CASE("large compatibility graph csr") {
 
     graph_construction_time +=
         std::chrono::duration_cast<std::chrono::milliseconds>(t1 - start).count();
+#ifdef USE_PMC        
     clique_finding_time += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+#endif    
     core_finding_time += std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
     delete g;
   }
   std::cout << "Graph time  (ms): " << graph_construction_time / trials << std::endl;
+#ifdef USE_PMC  
   std::cout << "Clique time (ms): " << clique_finding_time / trials << std::endl;
+#endif  
   std::cout << "Core time   (ms): " << core_finding_time / trials << std::endl;
 }
 
@@ -183,9 +189,10 @@ TEST_CASE("large compatibility graph atomic csr") {
     auto start = std::chrono::high_resolution_clock::now();
     auto* g = graph_constructor.BuildCompGraph(robin::GraphsStorageType::ATOMIC_CSR);
     auto t1 = std::chrono::high_resolution_clock::now();
-
+#ifdef USE_PMC
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+#endif        
     auto t2 = std::chrono::high_resolution_clock::now();
 
     auto actual_max_core_indices =
@@ -194,13 +201,17 @@ TEST_CASE("large compatibility graph atomic csr") {
 
     graph_construction_time +=
         std::chrono::duration_cast<std::chrono::milliseconds>(t1 - start).count();
+#ifdef USE_PMC        
     clique_finding_time += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+#endif    
     core_finding_time += std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
     delete g;
   }
   std::cout << "Graph time  (ms): " << graph_construction_time / trials << std::endl;
+#ifdef USE_PMC  
   std::cout << "Clique time (ms): " << clique_finding_time / trials << std::endl;
+#endif  
   std::cout << "Core time   (ms): " << core_finding_time / trials << std::endl;
 }
 
@@ -262,9 +273,10 @@ TEST_CASE("large compatibility graph adj list") {
     auto start = std::chrono::high_resolution_clock::now();
     auto* g = graph_constructor.BuildCompGraph(robin::GraphsStorageType::ADJ_LIST);
     auto t1 = std::chrono::high_resolution_clock::now();
-
+#ifdef USE_PMC  
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+#endif        
     auto t2 = std::chrono::high_resolution_clock::now();
 
     auto actual_max_core_indices =
@@ -273,13 +285,17 @@ TEST_CASE("large compatibility graph adj list") {
 
     graph_construction_time +=
         std::chrono::duration_cast<std::chrono::milliseconds>(t1 - start).count();
+#ifdef USE_PMC        
     clique_finding_time += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+#endif    
     core_finding_time += std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
     delete g;
   }
   std::cout << "Graph time  (ms): " << graph_construction_time / trials << std::endl;
+#ifdef USE_PMC
   std::cout << "Clique time (ms): " << clique_finding_time / trials << std::endl;
+#endif
   std::cout << "Core time   (ms): " << core_finding_time / trials << std::endl;
 }
 
@@ -343,6 +359,7 @@ TEST_CASE("sample comp graph construction") {
     std::sort(max_core.begin(), max_core.end());
     REQUIRE_THAT(max_core, Catch::Equals(expected_inliers_sizet));
 
+#ifdef USE_PMC
     // find clique
     robin::MaxCliqueSolver::Params clique_params;
     clique_params.solver_mode = robin::MaxCliqueSolver::CLIQUE_SOLVER_MODE::PMC_EXACT;
@@ -350,6 +367,7 @@ TEST_CASE("sample comp graph construction") {
     auto clique = clique_solver.FindMaxClique(*g);
     std::sort(clique.begin(), clique.end());
     REQUIRE_THAT(clique, Catch::Equals(expected_inliers_sizet));
+#endif
 
     delete g;
   }

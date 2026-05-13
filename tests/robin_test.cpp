@@ -48,11 +48,13 @@ TEST_CASE("vector averaging") {
   auto actual_max_core_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
   std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC
   auto actual_max_clique_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
   std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
 
   REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
+#endif  
   REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
 
   delete g;
@@ -89,11 +91,13 @@ TEST_CASE("vector averaging csr") {
   auto actual_max_core_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
   std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC
   auto actual_max_clique_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
   std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
 
   REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
+#endif  
   REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
 
   delete g;
@@ -131,11 +135,13 @@ TEST_CASE("vector averaging atomic csr") {
   auto actual_max_core_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
   std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC  
   auto actual_max_clique_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
   std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
 
   REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
+#endif  
   REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
 
   delete g;
@@ -173,11 +179,13 @@ TEST_CASE("vector averaging adj list") {
   auto actual_max_core_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
   std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC  
   auto actual_max_clique_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
   std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
 
   REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
+#endif  
   REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
 
   delete g;
@@ -211,14 +219,17 @@ TEST_CASE("single rotation averaging") {
     auto actual_max_core_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
     std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC    
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
     std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
-
+#endif
     // check results
     std::vector<size_t> expected_inliers = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+#ifdef USE_PMC        
     REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
-
+#endif
+    REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
     delete g;
   }
 
@@ -239,13 +250,15 @@ TEST_CASE("single rotation averaging") {
     auto actual_max_core_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
     std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
     std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
 
     // check results
     REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
-
+#endif
+    REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
     delete g;
   }
 }
@@ -293,14 +306,17 @@ TEST_CASE("3d reg") {
     auto actual_max_core_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
     std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC    
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
     std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
-
+#endif
     // no outliers
     std::vector<size_t> expected_inliers = {0, 1, 2, 3, 4};
+#ifdef USE_PMC     
     REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
-
+#endif    
+    REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
     delete g;
   }
 
@@ -339,14 +355,17 @@ TEST_CASE("3d reg") {
     auto actual_max_core_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
     std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC    
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
     std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
-
+#endif
     // outlier at index 2
     std::vector<size_t> expected_inliers = {0, 1, 3, 4};
+#ifdef USE_PMC        
     REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
-
+#endif
+    REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
     delete g;
   }
 }
@@ -391,9 +410,11 @@ TEST_CASE("3d reg large instance") {
   auto actual_max_core_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
   std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC  
   auto actual_max_clique_indices =
       robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
   std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
+#endif  
 
   delete g;
 }
@@ -449,12 +470,13 @@ TEST_CASE("3d reg with normals") {
     auto actual_max_core_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
     std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
     std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
 
     REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
-
+#endif
     delete g;
   }
 
@@ -515,12 +537,13 @@ TEST_CASE("3d reg with normals") {
     auto actual_max_core_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CORE);
     std::sort(actual_max_core_indices.begin(), actual_max_core_indices.end());
+#ifdef USE_PMC    
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
     std::sort(actual_max_clique_indices.begin(), actual_max_clique_indices.end());
-
-    REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
     REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers));
+#endif
+    REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers));
 
     // new (larger) noise bound
     // with this noise bound, the outlier should not be identified
@@ -533,13 +556,16 @@ TEST_CASE("3d reg with normals") {
     auto actual_max_core_indices_2 =
         robin::FindInlierStructure(g2, robin::InlierGraphStructure::MAX_CORE);
     std::sort(actual_max_core_indices_2.begin(), actual_max_core_indices_2.end());
+#ifdef USE_PMC    
     auto actual_max_clique_indices_2 =
         robin::FindInlierStructure(g2, robin::InlierGraphStructure::MAX_CLIQUE);
     std::sort(actual_max_clique_indices_2.begin(), actual_max_clique_indices_2.end());
-
+#endif
     std::vector<size_t> expected_inliers_2 = {0, 1, 2, 4};
     REQUIRE_THAT(actual_max_core_indices, Catch::Equals(expected_inliers_2));
+#ifdef USE_PMC    
     REQUIRE_THAT(actual_max_clique_indices, Catch::Equals(expected_inliers_2));
+#endif
 
     delete g;
     delete g2;
@@ -603,7 +629,7 @@ TEST_CASE("3d reg with normals") {
 
     // call robin API
     auto* g = robin::Make3dNormalRegInvGraph(src, tgt, noise_bound);
-
+#ifdef USE_PMC
     // find the clique
     auto actual_max_clique_indices =
         robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
@@ -616,8 +642,9 @@ TEST_CASE("3d reg with normals") {
         robin::FindInlierStructure(g_points, robin::InlierGraphStructure::MAX_CLIQUE);
     std::sort(actual_points_max_clique_indices.begin(), actual_points_max_clique_indices.end());
     REQUIRE_THAT(actual_points_max_clique_indices, Catch::Equals(actual_max_clique_indices));
-
-    delete g;
     delete g_points;
+#endif
+    delete g;
+    
   }
 }

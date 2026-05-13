@@ -16,12 +16,16 @@ std::vector<size_t> robin::FindInlierStructure(const IGraph* g,
     k_core_decomposition_solver.Solve(*g);
     return k_core_decomposition_solver.GetMaxKCore();
   }
+#ifdef USE_PMC
   case InlierGraphStructure::MAX_CLIQUE: {
     robin::MaxCliqueSolver::Params clique_params;
     clique_params.solver_mode = robin::MaxCliqueSolver::CLIQUE_SOLVER_MODE::PMC_EXACT;
     robin::MaxCliqueSolver clique_solver(clique_params);
     return clique_solver.FindMaxClique(*g);
   }
+#endif
+  default:
+    throw std::invalid_argument("Invalid graph structure type.");
   }
 }
 

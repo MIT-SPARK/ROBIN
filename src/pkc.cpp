@@ -6,6 +6,13 @@
 
 #include <robin/pkc.hpp>
 
+#include <iostream>
+#include <vector>
+#include <atomic>
+#include <omp.h>
+#include <algorithm>
+#include <cmath>
+
 int free_graph(robin::pkc::graph_t* g) {
   if (g->num_edges != nullptr) {
     free(g->num_edges);
@@ -18,30 +25,37 @@ int free_graph(robin::pkc::graph_t* g) {
   return 0;
 }
 
-void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
+/**
+ * @brief K-core decomposition with parallel PKC. This particular function is suitable for large
+ * graph, with optimization detailed in the original paper.
+ *
+ * @param g
+ * @param deg
+ */
+static void PKC_optimized(const robin::IGraph& g, std::atomic<size_t>* deg) {
   double frac = 0.98;
   size_t MAX_NUM_THREADS = omp_get_max_threads();
   long n = g.VertexCount();
   long reduceN = 0;
-  long Size = 0;
-  long visited = 0;
+  std::atomic<long> Size(0);
+  std::atomic<long> visited(0);
 
-  size_t* newDeg = NULL;
+  std::atomic<size_t>* newDeg = NULL;
   size_t* mapIndexToVtx = NULL;
-  vid_t* vertexToIndex = (vid_t*)malloc(n * sizeof(vid_t));
-  size_t cumNumEdges[MAX_NUM_THREADS];
+  robin::pkc::vid_t* vertexToIndex = (robin::pkc::vid_t*)malloc(n * sizeof(robin::pkc::vid_t));
+  std::vector<size_t> cumNumEdges(MAX_NUM_THREADS);
   long part = 0;
-  graph_t g_small;
+  robin::pkc::graph_t g_small;
   g_small.num_edges = NULL;
   g_small.adj = NULL;
 
 #pragma omp parallel default(none) shared(std::cout, std::cerr, reduceN, Size, frac, part, cumNumEdges, deg, newDeg, visited, g, g_small, vertexToIndex, mapIndexToVtx) firstprivate(n)
   {
-    auto NUM_THREADS = omp_get_num_threads();
+    int NUM_THREADS = omp_get_num_threads();
     int level = 0;
     int tid = omp_get_thread_num();
 
-    std::vector<vid_t> buff_vec;
+    std::vector<robin::pkc::vid_t> buff_vec;
     //vid_t* buff = (vid_t*)malloc((n * sizeof(vid_t)) / NUM_THREADS);
     //assert(buff != NULL);
 
@@ -49,21 +63,21 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
     int useSmallQ = 0;
 
 #pragma omp for schedule(static)
-    for (size_t i = 0; i < n; i++) {
+    for (long i = 0; i < n; i++) {
       deg[i] = (g.GetVertexDegree(i));
     }
 
-    while (visited < n) {
+    while (visited.load(std::memory_order_relaxed) < n) {
 
-      if ((useSmallQ == 0) && (visited >= (size_t)( static_cast<double>(n) * frac))) {
+      if ((useSmallQ == 0) && (visited.load(std::memory_order_relaxed) >= (size_t)( static_cast<double>(n) * frac))) {
 
         useSmallQ = 1;
         if (tid == 0) {
-          reduceN = n - visited;
-          newDeg = (size_t*)malloc(reduceN * sizeof(size_t));
+          reduceN = n - visited.load(std::memory_order_relaxed);
+          newDeg = new std::atomic<size_t> [reduceN * sizeof(size_t)];
           mapIndexToVtx = (size_t*)malloc(reduceN * sizeof(size_t));
           g_small.n = reduceN;
-          g_small.num_edges = (vid_t*)malloc((reduceN + 1) * sizeof(vid_t));
+          g_small.num_edges = (robin::pkc::vid_t*)malloc((reduceN + 1) * sizeof(robin::pkc::vid_t));
           g_small.num_edges[0] = 0;
 
           part = reduceN / NUM_THREADS;
@@ -71,7 +85,7 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
 #pragma omp barrier
 
 #pragma omp for schedule(static)
-        for (size_t i = 0; i < n; i++) {
+        for (long i = 0; i < n; i++) {
           if (deg[i] >= level) {
             buff_vec.push_back(i);
             //buff[end] = i;
@@ -80,13 +94,13 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
         }
 
         // Now add them atomically
-        size_t begin = __sync_fetch_and_add(&Size, end);
+        size_t begin = Size.fetch_add(end, std::memory_order_relaxed);
 
         for (size_t i = 0; i < end; i++) {
           //newDeg[begin + i] = deg[buff[i]];
           //mapIndexToVtx[begin + i] = buff[i];
           //vertexToIndex[buff[i]] = begin + i;
-          newDeg[begin + i] = deg[buff_vec[i]];
+          newDeg[begin + i].store(deg[buff_vec[i]].load(std::memory_order_relaxed), std::memory_order_relaxed);
           mapIndexToVtx[begin + i] = buff_vec[i];
           vertexToIndex[buff_vec[i]] = begin + i;
         }
@@ -99,7 +113,7 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
         size_t edgeCount = 0;
 
         if (tid == (NUM_THREADS - 1)) {
-          for (size_t i = tid * part; i < Size; i++) {
+          for (size_t i = tid * part; i < Size.load(std::memory_order_relaxed); i++) {
             size_t v = mapIndexToVtx[i];
             size_t prevEdgeCount = edgeCount;
             size_t v_edge_count = g.GetVertexDegree(v);
@@ -158,15 +172,15 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
             cumNumEdges[i] = prevEdgeCount;
           }
           g_small.m = start;
-          g_small.num_edges[Size] = start;
+          g_small.num_edges[Size.load(std::memory_order_relaxed)] = start;
 
-          g_small.adj = (eid_t*)malloc(g_small.m * sizeof(eid_t));
+          g_small.adj = (robin::pkc::eid_t*)malloc(g_small.m * sizeof(robin::pkc::eid_t));
           cumNumEdges[0] = 0;
         }
 #pragma omp barrier
         if (tid == (NUM_THREADS - 1)) {
 
-          for (size_t i = tid * part; i < Size; i++) {
+          for (size_t i = tid * part; i < Size.load(std::memory_order_relaxed); i++) {
             g_small.num_edges[i] = g_small.num_edges[i] + cumNumEdges[tid];
 
             size_t v = mapIndexToVtx[i];
@@ -222,7 +236,7 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
         // Now fix num_edges array
         if (tid == NUM_THREADS - 1) {
 
-          for (long i = (Size - 1); i >= (tid * part + 1); i--) {
+          for (long i = (Size.load(std::memory_order_relaxed) - 1); i >= (tid * part + 1); i--) {
             g_small.num_edges[i] = g_small.num_edges[i - 1];
           }
           g_small.num_edges[tid * part] = cumNumEdges[tid];
@@ -240,7 +254,7 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
       if (useSmallQ == 0) {
 
 #pragma omp for schedule(static)
-        for (size_t i = 0; i < n; i++) {
+        for (long i = 0; i < n; i++) {
           if (deg[i] == level) {
             //buff[end] = i;
             buff_vec.push_back(i);
@@ -252,7 +266,7 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
         while (start < end) {
 
           //vid_t v = buff[start];
-          vid_t v = buff_vec[start];
+          robin::pkc::vid_t v = buff_vec[start];
           start++;
 
           size_t v_edge_count = g.GetVertexDegree(v);
@@ -261,7 +275,7 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
             size_t deg_u = deg[u];
 
             if (deg_u > level) {
-              size_t du = __sync_fetch_and_sub(&deg[u], 1);
+              size_t du = deg[u].fetch_sub(1, std::memory_order_relaxed);
 
               if (du == (level + 1)) {
                 //buff[end] = u;
@@ -270,7 +284,7 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
               }
 
               if (du <= level) {
-                __sync_fetch_and_add(&deg[u], 1);
+                deg[u].fetch_add(1, std::memory_order_relaxed);
               }
             } // deg_u > level
 
@@ -279,7 +293,7 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
       } else {
 
 #pragma omp for schedule(static)
-        for (size_t i = 0; i < Size; i++) {
+        for (long i = 0; i < Size.load(std::memory_order_relaxed); i++) {
           if (newDeg[i] == level) {
             //buff[end] = i;
             buff_vec.push_back(i);
@@ -291,16 +305,16 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
         while (start < end) {
 
           //vid_t v = buff[start];
-          vid_t v = buff_vec[start];
+          robin::pkc::vid_t v = buff_vec[start];
           start++;
 
-          for (eid_t j = g_small.num_edges[v]; j < g_small.num_edges[v + 1]; j++) {
-            vid_t u = g_small.adj[j];
+          for (robin::pkc::eid_t j = g_small.num_edges[v]; j < g_small.num_edges[v + 1]; j++) {
+            robin::pkc::vid_t u = g_small.adj[j];
 
             size_t deg_u = newDeg[u];
 
             if (deg_u > level) {
-              size_t du = __sync_fetch_and_sub(&newDeg[u], 1);
+              size_t du = newDeg[u].fetch_sub(1, std::memory_order_relaxed);
 
               if (du == (level + 1)) {
                 //buff[end] = u;
@@ -309,14 +323,14 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
               }
 
               if (du <= level) {
-                __sync_fetch_and_add(&newDeg[u], 1);
+                newDeg[u].fetch_add(1, std::memory_order_relaxed);
               }
             } // deg_u > level
           }   // visit adjacencies
         }     // end of while loop
       }
 
-      __sync_fetch_and_add(&visited, end);
+      visited.fetch_add(end, std::memory_order_relaxed);
 
 #pragma omp barrier
       start = 0;
@@ -330,41 +344,48 @@ void robin::pkc::PKC_optimized(const IGraph& g, size_t* deg) {
 
     // copy core values from newDeg to deg
 #pragma omp for schedule(static)
-    for (size_t i = 0; i < Size; i++) {
-      deg[mapIndexToVtx[i]] = newDeg[i];
+    for (long i = 0; i < Size.load(std::memory_order_relaxed); i++) {
+      deg[mapIndexToVtx[i]].store(newDeg[i].load(std::memory_order_relaxed), std::memory_order_relaxed);
     }
 
   } //#end of parallel region
 
-  free(newDeg);
+  delete[] newDeg;
   free(mapIndexToVtx);
   free(vertexToIndex);
   free_graph(&g_small);
 }
 
-void robin::pkc::PKC_original(const IGraph& g, size_t* deg) {
+/**
+ * @brief K-core decomposition with parallel PKC. This is the non-optimized version.
+ * Each thread has its own queue -- parallel PKC_org for k-core decomposition
+ *
+ * @param g
+ * @param deg
+ */
+static void PKC_original(const robin::IGraph& g, std::atomic<size_t>* deg) {
   long n = g.VertexCount();
-  long visited = 0;
+  std::atomic<size_t> visited(0);
 
 #pragma omp parallel default(none) shared(std::cout, g, visited, deg) firstprivate(n)
   {
     int level = 0;
 
     // thread-local buffer
-    std::vector<vid_t> buff_vec;
-    auto NUM_THREADS = omp_get_num_threads();
+    std::vector<robin::pkc::vid_t> buff_vec;
+    int NUM_THREADS = omp_get_num_threads();
 
     long start = 0, end = 0;
 
 #pragma omp for schedule(static)
-    for (size_t i = 0; i < n; i++) {
+    for (long i = 0; i < n; i++) {
       deg[i] = g.GetVertexDegree(i);
     }
 
-    while (visited < n) {
+    while (visited.load(std::memory_order_relaxed) < n) {
 
 #pragma omp for schedule(static)
-      for (vid_t i = 0; i < n; i++) {
+      for (long i = 0; i < n; i++) {
         if (deg[i] == level) {
           buff_vec.push_back(i);
           end++;
@@ -374,31 +395,31 @@ void robin::pkc::PKC_original(const IGraph& g, size_t* deg) {
       // Get work from curr queue and also add work after the current size
       while (start < end) {
 
-        vid_t v = buff_vec[start];
+        robin::pkc::vid_t v = buff_vec[start];
         start++;
 
         size_t v_edge_count = g.GetVertexDegree(v);
         for (size_t e_id = 0; e_id < v_edge_count; ++e_id) {
           auto u = g.GetVertexEdge(v, e_id);
-          int deg_u = deg[u];
+          int deg_u = deg[u].load(std::memory_order_relaxed);
 
           if (deg_u > level) {
             // TODO: Consider https://en.cppreference.com/w/cpp/atomic/atomic/fetch_sub
-            int du = __sync_fetch_and_sub(&deg[u], 1);
+            size_t du = deg[u].fetch_sub(1, std::memory_order_relaxed);
 
             if (du == (level + 1)) {
               buff_vec.push_back(u);
               end++;
             }
             if (du <= level) {
-              __sync_fetch_and_add(&deg[u], 1);
+              deg[u].fetch_add(1, std::memory_order_relaxed);
             }
           } // deg_u > level
 
         } // visit adjacencies
       }   // end of while loop
 
-      __sync_fetch_and_add(&visited, end);
+      visited.fetch_add(end, std::memory_order_relaxed);
 
 #pragma omp barrier
       start = 0;
@@ -465,7 +486,7 @@ void robin::pkc::BZ_kCores(const IGraph& g, std::vector<size_t>* deg) {
   // kcores computation
   for (long i = 0; i < n; i++) {
     // Process the vertices in increasing order of degree
-    vid_t v = vert[i];
+    robin::pkc::vid_t v = vert[i];
     size_t v_edge_count = g.GetVertexDegree(v);
     for (size_t e_id = 0; e_id < v_edge_count; ++e_id) {
       auto u = g.GetVertexEdge(v, e_id);
@@ -504,7 +525,7 @@ void robin::pkc::PKC_original_serial(const IGraph& g, std::vector<size_t>* deg) 
 
   int level = 0;
 
-  vid_t* buff = (vid_t*)malloc(n * sizeof(vid_t));
+  robin::pkc::vid_t* buff = (robin::pkc::vid_t*)malloc(n * sizeof(robin::pkc::vid_t));
   assert(buff != NULL);
 
   long start = 0, end = 0;
@@ -524,7 +545,7 @@ void robin::pkc::PKC_original_serial(const IGraph& g, std::vector<size_t>* deg) 
 
     while (start < end) {
 
-      vid_t v = buff[start];
+      robin::pkc::vid_t v = buff[start];
       start++;
 
       // Check the adj list of vertex v
@@ -559,7 +580,7 @@ void robin::pkc::PKC_original_serial(const IGraph& g, std::vector<size_t>* deg) 
 void robin::pkc::PKC_parallel(const IGraph& g, std::vector<size_t>* core,
                               bool use_optimized) {
   assert(core != NULL);
-  size_t* temp_core = (size_t*)malloc(g.VertexCount() * sizeof(size_t));
+  std::atomic<size_t>* temp_core = new std::atomic<size_t>[g.VertexCount()];
   assert(temp_core != NULL);
   if (use_optimized) {
     PKC_optimized(g, temp_core);
@@ -568,7 +589,7 @@ void robin::pkc::PKC_parallel(const IGraph& g, std::vector<size_t>* core,
   }
   core->resize(g.VertexCount());
   for (size_t i = 0; i < core->size(); ++i) {
-    (*core)[i] = temp_core[i];
+    (*core)[i] = temp_core[i].load(std::memory_order_relaxed);;
   }
-  free(temp_core);
+  delete[] temp_core;
 }

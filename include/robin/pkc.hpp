@@ -61,24 +61,6 @@ struct graph_t {
 void BZ_kCores(const IGraph& g, std::vector<size_t>* deg);
 
 /**
- * @brief K-core decomposition with parallel PKC. This is the non-optimized version.
- * Each thread has its own queue -- parallel PKC_org for k-core decomposition
- *
- * @param g
- * @param deg
- */
-void PKC_original(const IGraph& g, size_t* deg);
-
-/**
- * @brief K-core decomposition with parallel PKC. This particular function is suitable for large
- * graph, with optimization detailed in the original paper.
- *
- * @param g
- * @param deg
- */
-void PKC_optimized(const IGraph& g, size_t* deg);
-
-/**
  * @brief Interface with robin::Graph for K-core decomposition with parallel PKC.
  * @param g
  * @param core
