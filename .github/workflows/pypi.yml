@@ -23,6 +23,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: dist-sdist
           path: dist/*.tar.gz
 
   cibuildwheel:
@@ -70,6 +71,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: dist-wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
 
   pypi:
@@ -79,7 +81,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: artifact
+          pattern: dist-*
+          merge-multiple: true
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@release/v1
