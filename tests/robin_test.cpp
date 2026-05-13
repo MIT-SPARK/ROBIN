@@ -250,6 +250,153 @@ TEST_CASE("single rotation averaging") {
   }
 }
 
+TEST_CASE("SVA KD-tree produces correct results across graph types") {
+  // Tests that the KD-tree based MakeVecAvgInvGraph produces the same inlier
+  // structure as expected for all graph storage types.
+  size_t N = 10;
+  size_t dimension = 5;
+  Eigen::VectorXd exp_vec(dimension, 1);
+
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> random_noises =
+      Eigen::MatrixXd::Random(dimension, N);
+  random_noises.colwise().normalize();
+  random_noises /= 10;
+  double noise_bound = 0.1;
+
+  // manually create outliers
+  random_noises.col(0) *= 10;
+  random_noises.col(9) *= 20;
+  std::vector<size_t> expected_inliers = {1, 2, 3, 4, 5, 6, 7, 8};
+
+  Eigen::MatrixXd measurements = Eigen::MatrixXd::Zero(dimension, N);
+  for (size_t i = 0; i < random_noises.cols(); ++i) {
+    measurements.col(i) = exp_vec + random_noises.col(i);
+  }
+
+  SECTION("ADJ_LIST matches expected") {
+    auto* g = robin::MakeVecAvgInvGraph(measurements, 2 * noise_bound,
+                                        robin::GraphsStorageType::ADJ_LIST);
+    auto inliers = robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(inliers.begin(), inliers.end());
+    REQUIRE_THAT(inliers, Catch::Equals(expected_inliers));
+    delete g;
+  }
+
+  SECTION("CSR matches expected") {
+    auto* g = robin::MakeVecAvgInvGraph(measurements, 2 * noise_bound,
+                                        robin::GraphsStorageType::CSR);
+    auto inliers = robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(inliers.begin(), inliers.end());
+    REQUIRE_THAT(inliers, Catch::Equals(expected_inliers));
+    delete g;
+  }
+
+  SECTION("ATOMIC_CSR matches expected") {
+    auto* g = robin::MakeVecAvgInvGraph(measurements, 2 * noise_bound,
+                                        robin::GraphsStorageType::ATOMIC_CSR);
+    auto inliers = robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(inliers.begin(), inliers.end());
+    REQUIRE_THAT(inliers, Catch::Equals(expected_inliers));
+    delete g;
+  }
+}
+
+TEST_CASE("SRA KD-tree chordal equivalence") {
+  // Tests that the KD-tree based MakeRotAvgInvGraph with chordal distance
+  // correctly identifies outliers.
+  Eigen::Quaternion<double> exp_mean_quat = Eigen::Quaternion<double>::UnitRandom();
+  Eigen::Matrix3d exp_mean_mat = exp_mean_quat.normalized().toRotationMatrix();
+
+  double noise_ceiling = 0.1; // radian
+  std::random_device rd;
+  std::mt19937 e2(rd());
+  std::uniform_real_distribution<> dist(0, noise_ceiling);
+
+  size_t N = 10;
+  std::vector<Eigen::Matrix3d> measurements;
+  for (size_t i = 0; i < N; ++i) {
+    double noise = dist(e2);
+    Eigen::AngleAxis<double> random_pertubation =
+        Eigen::AngleAxis<double>(noise, Eigen::Vector3d::UnitX());
+    measurements.emplace_back(exp_mean_mat * random_pertubation.toRotationMatrix());
+  }
+
+  SECTION("no outliers") {
+    auto* g = robin::MakeRotAvgInvGraph(measurements, robin::So3Distance::CHORDAL_DISTANCE,
+                                        2 * noise_ceiling, robin::GraphsStorageType::ADJ_LIST);
+    auto inliers = robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(inliers.begin(), inliers.end());
+
+    std::vector<size_t> expected_inliers = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    REQUIRE_THAT(inliers, Catch::Equals(expected_inliers));
+    delete g;
+  }
+
+  SECTION("with outliers") {
+    measurements[0] = measurements[0] * Eigen::AngleAxis<double>((10 + dist(e2)) * noise_ceiling,
+                                                                  Eigen::Vector3d::UnitY());
+    measurements[3] = measurements[3] * Eigen::AngleAxis<double>((10 + dist(e2)) * noise_ceiling,
+                                                                  Eigen::Vector3d::UnitZ());
+
+    std::vector<size_t> expected_inliers = {1, 2, 4, 5, 6, 7, 8, 9};
+
+    auto* g = robin::MakeRotAvgInvGraph(measurements, robin::So3Distance::CHORDAL_DISTANCE,
+                                        2 * noise_ceiling, robin::GraphsStorageType::ADJ_LIST);
+    auto inliers = robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(inliers.begin(), inliers.end());
+    REQUIRE_THAT(inliers, Catch::Equals(expected_inliers));
+    delete g;
+  }
+}
+
+TEST_CASE("SRA KD-tree geodesic equivalence") {
+  // Tests that the KD-tree based MakeRotAvgInvGraph with geodesic distance
+  // correctly identifies outliers (same test structure as the existing SRA test).
+  Eigen::Quaternion<double> exp_mean_quat = Eigen::Quaternion<double>::UnitRandom();
+  Eigen::Matrix3d exp_mean_mat = exp_mean_quat.normalized().toRotationMatrix();
+
+  double noise_ceiling = 0.1;
+  std::random_device rd;
+  std::mt19937 e2(rd());
+  std::uniform_real_distribution<> dist(0, noise_ceiling);
+
+  size_t N = 10;
+  std::vector<Eigen::Matrix3d> measurements;
+  for (size_t i = 0; i < N; ++i) {
+    double noise = dist(e2);
+    Eigen::AngleAxis<double> random_pertubation =
+        Eigen::AngleAxis<double>(noise, Eigen::Vector3d::UnitX());
+    measurements.emplace_back(exp_mean_mat * random_pertubation.toRotationMatrix());
+  }
+
+  SECTION("no outliers") {
+    auto* g = robin::MakeRotAvgInvGraph(measurements, robin::So3Distance::GEODESIC_DISTANCE,
+                                        2 * noise_ceiling, robin::GraphsStorageType::ADJ_LIST);
+    auto inliers = robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(inliers.begin(), inliers.end());
+
+    std::vector<size_t> expected_inliers = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    REQUIRE_THAT(inliers, Catch::Equals(expected_inliers));
+    delete g;
+  }
+
+  SECTION("with outliers CSR") {
+    measurements[0] = measurements[0] * Eigen::AngleAxis<double>((10 + dist(e2)) * noise_ceiling,
+                                                                  Eigen::Vector3d::UnitY());
+    measurements[3] = measurements[3] * Eigen::AngleAxis<double>((10 + dist(e2)) * noise_ceiling,
+                                                                  Eigen::Vector3d::UnitZ());
+
+    std::vector<size_t> expected_inliers = {1, 2, 4, 5, 6, 7, 8, 9};
+
+    auto* g = robin::MakeRotAvgInvGraph(measurements, robin::So3Distance::GEODESIC_DISTANCE,
+                                        2 * noise_ceiling, robin::GraphsStorageType::CSR);
+    auto inliers = robin::FindInlierStructure(g, robin::InlierGraphStructure::MAX_CLIQUE);
+    std::sort(inliers.begin(), inliers.end());
+    REQUIRE_THAT(inliers, Catch::Equals(expected_inliers));
+    delete g;
+  }
+}
+
 TEST_CASE("3d reg") {
   // an arbitrary transformation matrix
   Eigen::Matrix4d T;
