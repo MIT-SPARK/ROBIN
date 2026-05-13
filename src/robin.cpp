@@ -6,23 +6,82 @@
 
 #include <robin/robin.hpp>
 
-std::vector<size_t> robin::FindInlierStructure(const IGraph* g,
-                                               InlierGraphStructure graph_structure) {
-  // identify inlier structures
+namespace {
+std::vector<size_t> solve_on_graph(const robin::IGraph* g,
+                                   robin::InlierGraphStructure graph_structure) {
   switch (graph_structure) {
-  case InlierGraphStructure::MAX_CORE: {
-    KCoreDecompositionSolver k_core_decomposition_solver(
+  case robin::InlierGraphStructure::MAX_CORE: {
+    robin::KCoreDecompositionSolver k_core_decomposition_solver(
         robin::KCoreDecompositionSolver::KCORE_SOLVER_MODE::BZ_SERIAL);
     k_core_decomposition_solver.Solve(*g);
     return k_core_decomposition_solver.GetMaxKCore();
   }
-  case InlierGraphStructure::MAX_CLIQUE: {
+  case robin::InlierGraphStructure::MAX_CLIQUE: {
     robin::MaxCliqueSolver::Params clique_params;
     clique_params.solver_mode = robin::MaxCliqueSolver::CLIQUE_SOLVER_MODE::PMC_EXACT;
     robin::MaxCliqueSolver clique_solver(clique_params);
     return clique_solver.FindMaxClique(*g);
   }
   }
+  return {};
+}
+} // anonymous namespace
+
+std::vector<size_t> robin::FindInlierStructure(const IGraph* g,
+                                               InlierGraphStructure graph_structure) {
+  size_t N = g->VertexCount();
+
+  // Identify non-isolated vertices
+  std::vector<size_t> new_to_old;
+  std::vector<size_t> old_to_new(N, SIZE_MAX);
+
+  for (size_t i = 0; i < N; ++i) {
+    if (g->GetVertexDegree(i) > 0) {
+      old_to_new[i] = new_to_old.size();
+      new_to_old.push_back(i);
+    }
+  }
+
+  size_t N_compact = new_to_old.size();
+
+  // If no vertices were filtered, run solver on original graph
+  if (N_compact == N) {
+    return solve_on_graph(g, graph_structure);
+  }
+
+  // All vertices isolated — no inliers
+  if (N_compact == 0) {
+    return {};
+  }
+
+  // Build compacted adjacency list with remapped vertex IDs
+  std::vector<std::vector<size_t>> compact_adj(N_compact);
+  size_t compact_edges = 0;
+  for (size_t new_i = 0; new_i < N_compact; ++new_i) {
+    size_t old_i = new_to_old[new_i];
+    size_t deg = g->GetVertexDegree(old_i);
+    compact_adj[new_i].reserve(deg);
+    for (size_t e = 0; e < deg; ++e) {
+      size_t old_j = g->GetVertexEdge(old_i, e);
+      size_t new_j = old_to_new[old_j];
+      compact_adj[new_i].push_back(new_j);
+    }
+    compact_edges += deg;
+  }
+  compact_edges /= 2; // undirected: each edge counted twice
+
+  AdjListGraph compact_graph(std::move(compact_adj), compact_edges);
+
+  // Run solver on compact graph
+  auto compact_result = solve_on_graph(&compact_graph, graph_structure);
+
+  // Remap back to original vertex IDs
+  std::vector<size_t> result;
+  result.reserve(compact_result.size());
+  for (size_t new_id : compact_result) {
+    result.push_back(new_to_old[new_id]);
+  }
+  return result;
 }
 
 robin::IGraph* robin::MakeVecAvgInvGraph(const Eigen::MatrixXd& measurements, double noise_bound,
