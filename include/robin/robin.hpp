@@ -97,4 +97,27 @@ IGraph* Make3dNormalRegInvGraph(
     const Eigen::Vector2d& noise_bound,
     GraphsStorageType graph_storage_type = robin::GraphsStorageType::ATOMIC_CSR);
 
+//
+// Precomputed distance pipeline (optimized paths)
+//
+
+/**
+ * @brief Build a CSR compatibility graph for 3D point registration using precomputed distances.
+ * Returns nullptr if memory budget exceeds 512MB, in which case caller falls back to existing path.
+ */
+CSRGraph* BuildCSRCompGraph_3dReg_precomputed(const double* src_points, const double* model_points,
+                                              size_t N, double noise_bound);
+
+/**
+ * @brief Build a CSR compatibility graph for 3D point+normal registration using precomputed
+ * distances.
+ * Returns nullptr if memory budget exceeds 512MB, in which case caller falls back to existing path.
+ */
+CSRGraph* BuildCSRCompGraph_3dNormalReg_precomputed(const double* src_points,
+                                                    const double* src_normals,
+                                                    const double* model_points,
+                                                    const double* model_normals, size_t N,
+                                                    double point_noise_bound,
+                                                    double normal_noise_bound);
+
 } // namespace robin

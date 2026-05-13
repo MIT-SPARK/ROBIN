@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <iostream>
@@ -13,6 +15,21 @@
 #include <string>
 
 namespace robin {
+
+/**
+ * @brief Decode a linear index to a pair of indices for upper-triangular iteration.
+ * Maps k in [0, N*(N-1)/2) to unique pair (i,j) where 0 <= i < j < N.
+ * This is the same mapping used inline in core.hpp for pairwise iteration.
+ */
+inline std::pair<size_t, size_t> pair_from_linear_index(size_t k, size_t N) {
+  size_t i = k / N;
+  size_t j = k % N;
+  if (j <= i) {
+    i = N - i - 2;
+    j = N - j - 1;
+  }
+  return {i, j};
+}
 
 /**
  * Calculate (n choose k), also known as the binomial coefficient
